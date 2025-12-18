@@ -1,20 +1,20 @@
 [
   {
-    "name": "판교역동편 380",
-    "cityCode": 41130,
-    "nodeId": "206000637",
-    "routeId": "204000079"
+    "name": "판교역동편 / 380번",
+    "cityCode": 31,
+    "nodeId": "GGB206000637",
+    "routeId": "GGB204000079"
   },
-    {
-    "name": "판교역동편 390",
-    "cityCode": 41130,
-    "nodeId": "206000637",
-    "routeId": "204000051"
+  {
+    "name": "판교역동편 / 390번",
+    "cityCode": 31,
+    "nodeId": "GGB206000637",
+    "routeId": "GGB204000051"
   },
-      {
-    "name": "아데나팰리스 220",
-    "cityCode": 41130,
-    "nodeId": "206000199",
-    "routeId": "204000022"
+  {
+    "name": "아데나팰리스 / 220번",
+    "cityCode": 31,
+    "nodeId": "GGB206000199",
+    "routeId": "GGB204000022"
   }
 ]

@@ -34,13 +34,12 @@ export async function GET(req: NextRequest) {
 
   // API 요청 URL 구성
   const query = new URLSearchParams({
-    serviceKey: apiKey,
     cityCode,
     nodeId,
     routeId,
     _type: 'json',
   });
-  const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}`;
+  const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}&serviceKey=${encodeURIComponent(apiKey)}`;
 
   try {
     const apiRes = await fetch(serviceUrl, {
@@ -55,19 +54,20 @@ export async function GET(req: NextRequest) {
 
     const jsonData: ApiResponse<BusArrivalInfo> = await apiRes.json();
     const resultCode = jsonData.response.header.resultCode;
+    const totalCount = jsonData.response.body.totalCount;
 
     if (resultCode !== '00') {
       throw new Error(`API Error: ${jsonData.response.header.resultMsg} (Code: ${resultCode})`);
+    }
+
+    if (totalCount === 0) {
+      return NextResponse.json({ message: '도착 정보가 없습니다.' }, { status: 404 });
     }
 
     const items = jsonData.response.body.items.item;
     
     // API가 단일 항목 또는 배열을 반환할 수 있으므로 첫 번째 항목을 사용
     const arrivalInfo = Array.isArray(items) ? items[0] : items;
-
-    if (!arrivalInfo) {
-        return NextResponse.json({ message: '도착 정보가 없습니다.' }, { status: 404 });
-    }
     
     return NextResponse.json(arrivalInfo);
 

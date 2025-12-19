@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse, BusArrivalInfo } from '@/lib/types';
 
 const API_BASE_URL = 'http://apis.data.go.kr/1613000/ArvlInfoInqireService';
-const API_ENDPOINT = '/getSttnAcctoSpcifyRouteBusArvlPrearngeInfoList';
 
 /**
- * 클라이언트의 요청을 받아 data.go.kr API로 전달하고 결과를 반환하는 API Route Handler
+ * 정류소 ID를 기반으로 모든 도착 정보를 가져온 후, 특정 노선 ID로 필터링하여 반환합니다.
  * @param req NextRequest
  * @returns NextResponse
  */
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const cityCode = searchParams.get('cityCode');
   const nodeId = searchParams.get('nodeId');
-  const routeId = searchParams.get('routeId');
+  const routeId = searchParams.get('routeId'); // 필터링을 위해 여전히 필요
 
   if (!cityCode || !nodeId || !routeId) {
     return NextResponse.json(
@@ -32,21 +31,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // API 요청 URL 구성
+  // 1. 정류소의 모든 도착 정보를 요청
+  const API_ENDPOINT = '/getSttnAcctoArvlPrearngeInfoList';
   const query = new URLSearchParams({
     cityCode,
     nodeId,
-    routeId,
     _type: 'json',
+    numOfRows: '100' // 혹시 모르니 받아오는 데이터 수 증가
   });
-  const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}&serviceKey=${encodeURIComponent(apiKey)}`;
-
+  const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}&serviceKey=${apiKey}`;
+  
   try {
-    const apiRes = await fetch(serviceUrl, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    const apiRes = await fetch(serviceUrl);
 
     if (!apiRes.ok) {
       throw new Error(`API call failed with status: ${apiRes.status}`);
@@ -60,14 +56,26 @@ export async function GET(req: NextRequest) {
       throw new Error(`API Error: ${jsonData.response.header.resultMsg} (Code: ${resultCode})`);
     }
 
-    if (totalCount === 0) {
-      return NextResponse.json({ message: '도착 정보가 없습니다.' }, { status: 404 });
+    if (totalCount === 0 || !jsonData.response.body.items) {
+      return NextResponse.json({ message: '해당 정류소에 도착 예정인 버스가 없습니다.' }, { status: 404 });
     }
 
-    const items = jsonData.response.body.items.item;
+    const items = Array.isArray(jsonData.response.body.items.item) 
+      ? jsonData.response.body.items.item 
+      : [jsonData.response.body.items.item];
     
-    // API가 단일 항목 또는 배열을 반환할 수 있으므로 첫 번째 항목을 사용
-    const arrivalInfo = Array.isArray(items) ? items[0] : items;
+    // 2. 받아온 전체 목록에서 원하는 routeId를 가진 모든 버스를 필터링
+    const filteredBuses = items.filter(item => item.routeid === routeId);
+
+    if (filteredBuses.length === 0) {
+      console.log(`[Debug] RouteID ${routeId} not found in the arrival list for NodeID ${nodeId}.`);
+      return NextResponse.json({ message: `해당 정류소에 ${routeId}번 버스 도착 정보가 없습니다.` }, { status: 404 });
+    }
+    
+    // 3. 필터링된 버스들 중 arrtime이 가장 작은 (가장 빨리 도착하는) 버스를 선택
+    const arrivalInfo = filteredBuses.reduce((prev, current) => {
+        return (prev.arrtime < current.arrtime) ? prev : current;
+    });
     
     return NextResponse.json(arrivalInfo);
 

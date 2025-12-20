@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BusOnTime",
+  title: "버스어딨니",
   description: "실시간 버스 도착 정보 앱",
 };
 

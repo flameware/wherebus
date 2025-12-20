@@ -1,8 +1,16 @@
 "use client";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
-import { BusCard } from "@/components/bus-card";
+import { Terminal, Timer } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BusArrivalInfo } from "@/lib/types";
 import { useEffect, useState } from "react";
@@ -62,16 +70,29 @@ export default function Home() {
     setArrivalInfos(newArrivalInfos);
     setIsLoading(false);
   };
-
+  
   useEffect(() => {
     fetchAllBusData();
   }, []);
 
+  const formatTime = (timeInSeconds: number) => {
+    if (timeInSeconds < 60) {
+      return '곧 도착';
+    }
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = timeInSeconds % 60;
+    if (seconds === 0) {
+      return `${minutes}분 후`;
+    }
+    return `${minutes}분 ${seconds}초 후`;
+  };
+
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center bg-gray-50 dark:bg-gray-900">
-      <div className="w-full max-w-md p-4 pb-20"> {/* 하단 버튼 공간 확보를 위해 padding-bottom 추가 */}
+      <div className="w-full max-w-md p-4 pb-20">
         <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">BusOnTime</h1>
+          <h1 className="text-2xl font-bold">버스어딨니</h1>
         </header>
 
         {error && (
@@ -82,23 +103,53 @@ export default function Home() {
           </Alert>
         )}
 
-        <div className="space-y-4">
-          {(favoritesData as Favorite[]).map((favorite) => {
-            const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
-            return (
-              <BusCard 
-                key={key}
-                favoriteName={favorite.name}
-                arrivalInfo={arrivalInfos[key]} 
-                isLoading={isLoading} 
-              />
-            );
-          })}
-          {favoritesData.length === 0 && !isLoading && !error && (
-            <p className="text-center text-gray-500">
-              `src/lib/favorites.json` 파일에 즐겨찾기를 추가해주세요.
-            </p>
-          )}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">노선</TableHead>
+                <TableHead>정류장</TableHead>
+                <TableHead>도착예정</TableHead>
+                <TableHead className="text-right">남은 정류장</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                  </TableRow>
+                ))
+              ) : (favoritesData as Favorite[]).map((favorite) => {
+                const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
+                const arrivalInfo = arrivalInfos[key];
+                return (
+                  <TableRow key={key}>
+                    <TableCell className="font-medium">
+                      {arrivalInfo ? arrivalInfo.routeno : favorite.name.split(' / ')[1] || ''}
+                    </TableCell>
+                    <TableCell>{arrivalInfo ? arrivalInfo.nodenm : favorite.name.split(' / ')[0] || ''}</TableCell>
+                    <TableCell>
+                      {arrivalInfo ? (
+                        <span className="flex items-center gap-1 text-blue-600">
+                          <Timer className="h-4 w-4" />
+                          {formatTime(arrivalInfo.arrtime)}
+                        </span>
+                      ) : (
+                        "정보 없음"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {arrivalInfo ? arrivalInfo.arrprevstationcnt : "-"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </div>
       <div className="fixed bottom-0 w-full max-w-md p-4 bg-white dark:bg-gray-900 border-t">

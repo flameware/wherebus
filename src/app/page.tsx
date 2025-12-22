@@ -25,8 +25,14 @@ interface Favorite {
   routeId: string;
 }
 
+interface FavoriteGroups {
+  [groupName: string]: Favorite[];
+}
+
 export default function Home() {
-  const [arrivalInfos, setArrivalInfos] = useState<{ [key: string]: BusArrivalInfo | null }>({});
+  const [arrivalInfos, setArrivalInfos] = useState<{
+    [key: string]: BusArrivalInfo | null;
+  }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,10 +40,14 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     const newArrivalInfos: { [key: string]: BusArrivalInfo | null } = {};
-    const favoriteList: Favorite[] = favoritesData;
+    const favoriteList: Favorite[] = Object.values(
+      favoritesData as FavoriteGroups,
+    ).flat();
 
     if (favoriteList.length === 0) {
-      setError("즐겨찾기 설정이 필요합니다. src/lib/favorites.json 파일을 확인하세요.");
+      setError(
+        "즐겨찾기 설정이 필요합니다. src/lib/favorites.json 파일을 확인하세요.",
+      );
       setIsLoading(false);
       return;
     }
@@ -52,7 +62,7 @@ export default function Home() {
             routeId: favorite.routeId,
           });
           const res = await fetch(`/api/bus?${query.toString()}`);
-          
+
           if (!res.ok) {
             const errorData = await res.json();
             throw new Error(errorData.message || `HTTP ${res.status}`);
@@ -64,20 +74,20 @@ export default function Home() {
           console.error(`Failed to fetch data for ${favorite.name}:`, e);
           newArrivalInfos[key] = null;
         }
-      })
+      }),
     );
-    
+
     setArrivalInfos(newArrivalInfos);
     setIsLoading(false);
   };
-  
+
   useEffect(() => {
     fetchAllBusData();
   }, []);
 
   const formatTime = (timeInSeconds: number) => {
     if (timeInSeconds < 60) {
-      return '곧 도착';
+      return "곧 도착";
     }
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = timeInSeconds % 60;
@@ -86,7 +96,6 @@ export default function Home() {
     }
     return `${minutes}분 ${seconds}초 후`;
   };
-
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center bg-gray-50 dark:bg-gray-900">
@@ -103,57 +112,107 @@ export default function Home() {
           </Alert>
         )}
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px]">노선</TableHead>
-                <TableHead>정류장</TableHead>
-                <TableHead>도착예정</TableHead>
-                <TableHead className="text-right">남은 정류장</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                  </TableRow>
-                ))
-              ) : (favoritesData as Favorite[]).map((favorite) => {
-                const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
-                const arrivalInfo = arrivalInfos[key];
-                return (
-                  <TableRow key={key}>
-                    <TableCell className="font-medium">
-                      {arrivalInfo ? arrivalInfo.routeno : favorite.name.split(' / ')[1] || ''}
-                    </TableCell>
-                    <TableCell>{arrivalInfo ? arrivalInfo.nodenm : favorite.name.split(' / ')[0] || ''}</TableCell>
-                    <TableCell>
-                      {arrivalInfo ? (
-                        <span className="flex items-center gap-1 text-blue-600">
-                          <Timer className="h-4 w-4" />
-                          {formatTime(arrivalInfo.arrtime)}
-                        </span>
-                      ) : (
-                        "정보 없음"
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {arrivalInfo ? arrivalInfo.arrprevstationcnt : "-"}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+        {isLoading
+          ? Array.from({ length: 2 }).map((_, groupIndex) => (
+              <div key={groupIndex} className="mb-8">
+                <h2 className="text-xl font-semibold mb-2" />
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[80px]">노선</TableHead>
+                        <TableHead>정류장</TableHead>
+                        <TableHead>도착예정</TableHead>
+                        <TableHead className="text-right">
+                          남은 정류장
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Array.from({ length: 2 }).map((_, rowIndex) => (
+                        <TableRow key={rowIndex}>
+                          <TableCell>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))
+          : Object.entries(favoritesData as FavoriteGroups).map(
+              ([groupName, favorites]) => (
+                <div key={groupName} className="mb-8">
+                  <h2 className="text-xl font-semibold mb-2">{groupName}</h2>
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[80px]">노선</TableHead>
+                          <TableHead>정류장</TableHead>
+                          <TableHead>도착예정</TableHead>
+                          <TableHead className="text-right">
+                            남은 정류장
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {favorites.map((favorite) => {
+                          const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
+                          const arrivalInfo = arrivalInfos[key];
+                          return (
+                            <TableRow key={key}>
+                              <TableCell className="font-medium">
+                                {arrivalInfo
+                                  ? arrivalInfo.routeno
+                                  : favorite.name.split(" / ")[1] || ""}
+                              </TableCell>
+                              <TableCell>
+                                {arrivalInfo
+                                  ? arrivalInfo.nodenm
+                                  : favorite.name.split(" / ")[0] || ""}
+                              </TableCell>
+                              <TableCell>
+                                {arrivalInfo ? (
+                                  <span className="flex items-center gap-1 text-blue-600">
+                                    <Timer className="h-4 w-4" />
+                                    {formatTime(arrivalInfo.arrtime)}
+                                  </span>
+                                ) : (
+                                  "정보 없음"
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {arrivalInfo
+                                  ? arrivalInfo.arrprevstationcnt
+                                  : "-"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ),
+            )}
       </div>
       <div className="fixed bottom-0 w-full max-w-md p-4 bg-white dark:bg-gray-900 border-t">
-        <Button onClick={fetchAllBusData} disabled={isLoading} className="w-full">
+        <Button
+          onClick={fetchAllBusData}
+          disabled={isLoading}
+          className="w-full"
+        >
           {isLoading ? "갱신 중..." : "새로고침"}
         </Button>
       </div>

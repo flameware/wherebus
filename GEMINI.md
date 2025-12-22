@@ -33,3 +33,7 @@
 - 선언적 UI 작성.
 - Tailwind CSS를 사용하여 반응형 디자인(Mobile-First) 구현.
 - 각 함수와 컴포넌트에 간단한 JSDoc 주석 추가.
+
+
+## 6. Workflow
+- 이 repository는 AI-DLC(AI-Driven Development Lifecycle) 워크플로우를 따릅니다.

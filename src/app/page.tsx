@@ -4,8 +4,9 @@ import { ArrivalTrack } from "@/components/arrival-track";
 import { PULL_THRESHOLD, usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
+import { orderStops } from "@/lib/stop-order";
 import { cn } from "@/lib/utils";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // 즐겨찾기 정류장 목록을 JSON 파일에서 가져옵니다.
 import favoritesData from "@/lib/favorites.json";
@@ -34,7 +35,17 @@ export default function Home() {
   }>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  // 정류장 순서를 정한 시각. 보는 도중에 카드가 움직이지 않도록 화면이 보이기 시작할 때만 바꿉니다.
+  const [orderedAt, setOrderedAt] = useState<number | null>(null);
   const now = useNow();
+
+  const orderedStops = useMemo(
+    () =>
+      orderedAt === null
+        ? favoriteStops
+        : orderStops(favoriteStops, new Date(orderedAt)),
+    [orderedAt],
+  );
 
   const fetchAllBusData = useCallback(async () => {
     setIsRefreshing(true);
@@ -99,6 +110,7 @@ export default function Home() {
     const stopPolling = () => clearInterval(intervalId);
     const startPolling = () => {
       stopPolling();
+      setOrderedAt(Date.now());
       fetchAllBusData();
       intervalId = setInterval(fetchAllBusData, REFRESH_INTERVAL_MS);
     };
@@ -199,7 +211,7 @@ export default function Home() {
         )}
 
         <div className="flex flex-col gap-5">
-          {favoriteStops.map((stop) => (
+          {orderedStops.map((stop) => (
             <section
               key={stop.nodeId}
               className="rounded-2xl bg-white p-4 shadow-sm"

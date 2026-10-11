@@ -64,6 +64,7 @@ export type RouteType = "직행좌석" | "좌석" | "일반" | "마을";
 export interface FavoriteStop {
   alias: string; // 사용자가 붙인 별칭 (예: 판교역)
   stopName: string; // 정식 정류장명 (예: 판교역동편)
+  priorityHours?: [number, number]; // 우선 시간대 [시작 시, 끝 시). 이 시간에는 맨 위에 표시
   nodeId: string;
   routes: FavoriteRoute[];
 }

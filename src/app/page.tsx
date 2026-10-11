@@ -109,22 +109,30 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // 외부 API를 폴링하는 동기화 effect라 첫 조회도 여기서 시작합니다.
-    // setState는 조회 상태 표시와 fetch 결과 반영용이라 규칙을 예외 처리합니다.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchAllBusData();
-
-    // 주기적으로 갱신하고, 탭이나 앱으로 돌아왔을 때도 바로 갱신합니다.
-    const intervalId = setInterval(fetchAllBusData, REFRESH_INTERVAL_MS);
+    // 화면이 보이는 동안만 주기적으로 갱신합니다. 탭이나 앱이 숨겨지면
+    // 멈춰서 API 호출을 아끼고, 다시 보이면 바로 갱신한 뒤 재개합니다.
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    const stopPolling = () => clearInterval(intervalId);
+    const startPolling = () => {
+      stopPolling();
+      fetchAllBusData();
+      intervalId = setInterval(fetchAllBusData, REFRESH_INTERVAL_MS);
+    };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        fetchAllBusData();
+        startPolling();
+      } else {
+        stopPolling();
       }
     };
+
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      clearInterval(intervalId);
+      stopPolling();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [fetchAllBusData]);

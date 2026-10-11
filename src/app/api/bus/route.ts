@@ -8,6 +8,9 @@ import {
 
 const API_BASE_URL = "https://apis.data.go.kr/6410000/busarrivalservice/v2";
 
+// GBIS 응답 캐시 시간 (초)
+const CACHE_SECONDS = 20;
+
 /**
  * TAGO 형식의 ID(예: GGB206000637)를 GBIS ID(206000637)로 변환합니다.
  */
@@ -69,7 +72,11 @@ export async function GET(req: NextRequest) {
   const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}&serviceKey=${apiKey}`;
 
   try {
-    const apiRes = await fetch(serviceUrl, { cache: "no-store" });
+    // GBIS 일일 호출 한도(10,000건)를 지키기 위해 접속자 수와 관계없이
+    // 정류장·노선별로 20초에 최대 1번만 호출합니다.
+    const apiRes = await fetch(serviceUrl, {
+      next: { revalidate: CACHE_SECONDS },
+    });
 
     if (!apiRes.ok) {
       throw new Error(`API call failed with status: ${apiRes.status}`);

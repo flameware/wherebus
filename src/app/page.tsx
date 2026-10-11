@@ -70,7 +70,7 @@ export default function Home() {
 
           const data: BusArrivalInfo = await res.json();
           newArrivalInfos[key] = data;
-        } catch (e: any) {
+        } catch (e) {
           console.error(`Failed to fetch data for ${favorite.name}:`, e);
           newArrivalInfos[key] = null;
         }

@@ -19,12 +19,15 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   )
 }
 
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b bg-gray-100 dark:bg-gray-800", className)} {...props} />
-));
+function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn("[&_tr]:border-b bg-gray-100 dark:bg-gray-800", className)}
+      {...props}
+    />
+  )
+}
 
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {

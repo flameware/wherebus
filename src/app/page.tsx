@@ -12,11 +12,14 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BusArrivalInfo } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { RouteArrival } from "@/lib/types";
+import { useCallback, useEffect, useState } from "react";
 
 // 즐겨찾기 목록을 JSON 파일에서 가져옵니다.
 import favoritesData from "@/lib/favorites.json";
+
+// 자동 갱신 주기 (밀리초)
+const REFRESH_INTERVAL_MS = 30_000;
 
 interface Favorite {
   name: string;
@@ -29,17 +32,37 @@ interface FavoriteGroups {
   [groupName: string]: Favorite[];
 }
 
+// 즐겨찾기별 조회 결과. "도착 예정 없음"(빈 arrivals)과 조회 실패(error)를 구분합니다.
+type ArrivalResult =
+  | { status: "ok"; data: RouteArrival }
+  | { status: "error" };
+
+const getFavoriteKey = (favorite: Favorite) =>
+  `${favorite.nodeId}-${favorite.routeId}`;
+
+const formatTime = (minutes: number) =>
+  minutes <= 0 ? "곧 도착" : `${minutes}분 후`;
+
+const formatClock = (date: Date) =>
+  date.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
 export default function Home() {
-  const [arrivalInfos, setArrivalInfos] = useState<{
-    [key: string]: BusArrivalInfo | null;
+  const [arrivalResults, setArrivalResults] = useState<{
+    [key: string]: ArrivalResult;
   }>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAllBusData = async () => {
-    setIsLoading(true);
+  const fetchAllBusData = useCallback(async () => {
+    setIsRefreshing(true);
     setError(null);
-    const newArrivalInfos: { [key: string]: BusArrivalInfo | null } = {};
+    const newArrivalResults: { [key: string]: ArrivalResult } = {};
     const favoriteList: Favorite[] = Object.values(
       favoritesData as FavoriteGroups,
     ).flat();
@@ -49,59 +72,70 @@ export default function Home() {
         "즐겨찾기 설정이 필요합니다. src/lib/favorites.json 파일을 확인하세요.",
       );
       setIsLoading(false);
+      setIsRefreshing(false);
       return;
     }
 
     await Promise.allSettled(
       favoriteList.map(async (favorite) => {
-        const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
+        const key = getFavoriteKey(favorite);
         try {
           const query = new URLSearchParams({
-            cityCode: String(favorite.cityCode),
             nodeId: favorite.nodeId,
             routeId: favorite.routeId,
           });
-          const res = await fetch(`/api/bus?${query.toString()}`);
+          const res = await fetch(`/api/bus?${query.toString()}`, {
+            cache: "no-store",
+          });
 
           if (!res.ok) {
             const errorData = await res.json();
-            throw new Error(errorData.message || `HTTP ${res.status}`);
+            throw new Error(errorData.error || `HTTP ${res.status}`);
           }
 
-          const data: BusArrivalInfo = await res.json();
-          newArrivalInfos[key] = data;
+          const data: RouteArrival = await res.json();
+          newArrivalResults[key] = { status: "ok", data };
         } catch (e) {
           console.error(`Failed to fetch data for ${favorite.name}:`, e);
-          newArrivalInfos[key] = null;
+          newArrivalResults[key] = { status: "error" };
         }
       }),
     );
 
-    setArrivalInfos(newArrivalInfos);
+    setArrivalResults(newArrivalResults);
+    setLastUpdated(new Date());
     setIsLoading(false);
-  };
+    setIsRefreshing(false);
+  }, []);
 
   useEffect(() => {
     fetchAllBusData();
-  }, []);
 
-  const formatTime = (timeInSeconds: number) => {
-    if (timeInSeconds < 60) {
-      return "곧 도착";
-    }
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = timeInSeconds % 60;
-    if (seconds === 0) {
-      return `${minutes}분 후`;
-    }
-    return `${minutes}분 ${seconds}초 후`;
-  };
+    // 주기적으로 갱신하고, 탭이나 앱으로 돌아왔을 때도 바로 갱신합니다.
+    const intervalId = setInterval(fetchAllBusData, REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchAllBusData();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchAllBusData]);
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md p-4 pb-20">
         <header className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">버스어딨니</h1>
+          {lastUpdated && (
+            <span className="text-xs text-gray-500">
+              {formatClock(lastUpdated)} 기준
+            </span>
+          )}
         </header>
 
         {error && (
@@ -168,34 +202,56 @@ export default function Home() {
                       </TableHeader>
                       <TableBody>
                         {favorites.map((favorite) => {
-                          const key = `${favorite.cityCode}-${favorite.nodeId}-${favorite.routeId}`;
-                          const arrivalInfo = arrivalInfos[key];
+                          const key = getFavoriteKey(favorite);
+                          const result = arrivalResults[key];
+                          const [stationName, routeLabel] =
+                            favorite.name.split(" / ");
+                          const [first, second] =
+                            result?.status === "ok" ? result.data.arrivals : [];
                           return (
                             <TableRow key={key}>
                               <TableCell className="font-medium">
-                                {arrivalInfo
-                                  ? arrivalInfo.routeno
-                                  : favorite.name.split(" / ")[1] || ""}
+                                {result?.status === "ok"
+                                  ? result.data.routeName
+                                  : routeLabel || ""}
                               </TableCell>
+                              <TableCell>{stationName || ""}</TableCell>
                               <TableCell>
-                                {arrivalInfo
-                                  ? arrivalInfo.nodenm
-                                  : favorite.name.split(" / ")[0] || ""}
-                              </TableCell>
-                              <TableCell>
-                                {arrivalInfo ? (
-                                  <span className="flex items-center gap-1 text-blue-600">
-                                    <Timer className="h-4 w-4" />
-                                    {formatTime(arrivalInfo.arrtime)}
+                                {result?.status !== "ok" ? (
+                                  <span className="text-red-600">
+                                    조회 실패
                                   </span>
+                                ) : first ? (
+                                  <div className="flex flex-col">
+                                    <span className="flex items-center gap-1 text-blue-600">
+                                      <Timer className="h-4 w-4" />
+                                      {formatTime(first.predictTime)}
+                                    </span>
+                                    {second && (
+                                      <span className="text-xs text-gray-500">
+                                        다음 {formatTime(second.predictTime)}
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
-                                  "정보 없음"
+                                  <span className="text-gray-500">
+                                    도착 예정 없음
+                                  </span>
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
-                                {arrivalInfo
-                                  ? arrivalInfo.arrprevstationcnt
-                                  : "-"}
+                                {first ? (
+                                  <div className="flex flex-col">
+                                    <span>{first.locationNo}</span>
+                                    {second && (
+                                      <span className="text-xs text-gray-500">
+                                        {second.locationNo}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  "-"
+                                )}
                               </TableCell>
                             </TableRow>
                           );
@@ -210,10 +266,10 @@ export default function Home() {
       <div className="fixed bottom-0 w-full max-w-md p-4 bg-white dark:bg-gray-900 border-t">
         <Button
           onClick={fetchAllBusData}
-          disabled={isLoading}
+          disabled={isRefreshing}
           className="w-full"
         >
-          {isLoading ? "갱신 중..." : "새로고침"}
+          {isRefreshing ? "갱신 중..." : "새로고침"}
         </Button>
       </div>
     </main>

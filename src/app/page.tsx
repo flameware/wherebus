@@ -109,6 +109,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // 외부 API를 폴링하는 동기화 effect라 첫 조회도 여기서 시작합니다.
+    // setState는 조회 상태 표시와 fetch 결과 반영용이라 규칙을 예외 처리합니다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAllBusData();
 
     // 주기적으로 갱신하고, 탭이나 앱으로 돌아왔을 때도 바로 갱신합니다.

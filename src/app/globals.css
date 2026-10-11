@@ -123,3 +123,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* iOS Safari의 바운스·기본 당겨서 새로고침이 앱의 당겨서 새로고침과 겹치지 않게 합니다. */
+html {
+  overscroll-behavior-y: contain;
+}

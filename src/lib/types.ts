@@ -1,34 +1,54 @@
 /**
- * /getSttnAcctoArvlPrearngeInfoList 또는 /getSttnAcctoSpcifyRouteBusArvlPrearngeInfoList
- * API의 응답 아이템 타입입니다.
+ * 경기도 버스도착정보 v2 /getBusArrivalItemv2 API의 응답 아이템 타입입니다.
+ * 버스가 없는 칸은 숫자 대신 빈 문자열("")로 내려옵니다.
  */
-export interface BusArrivalInfo {
-  arrprevstationcnt: number; // 남은 정류장 수
-  arrtime: number; // 도착 예정 시간 (초)
-  nodeid: string; // 정류소 ID
-  nodenm: string; // 정류소명
-  routeid: string; // 노선 ID
-  routeno: string | number; // 노선 번호
-  routetp: string; // 노선 유형 (예: "간선버스")
-  vehicleno: string; // 차량 번호
+export interface GbisBusArrivalItem {
+  routeId: number; // 노선 ID
+  routeName: string | number; // 노선 번호
+  routeDestName: string; // 노선 종점(방면)
+  stationId: number; // 정류소 ID
+  locationNo1: number | ""; // 첫 번째 차량의 남은 정류장 수
+  locationNo2: number | "";
+  predictTime1: number | ""; // 첫 번째 차량의 도착 예정 시간 (분)
+  predictTime2: number | "";
+  plateNo1: string; // 첫 번째 차량 번호
+  plateNo2: string;
+  stationNm1: string; // 첫 번째 차량의 현재 위치 정류장명
+  stationNm2: string;
 }
 
 /**
- * API 응답의 기본 구조
+ * GBIS API 응답의 기본 구조
+ * resultCode: 0 정상, 4 결과 없음, 그 외 오류
  */
-export interface ApiResponse<T> {
+export interface GbisResponse<T> {
   response: {
-    header: {
-      resultCode: string;
-      resultMsg: string;
+    msgHeader: {
+      queryTime: string;
+      resultCode: number;
+      resultMessage: string;
     };
-    body: {
-      items: {
-        item: T[] | T; // 아이템이 하나일 경우 객체, 여러개일 경우 배열일 수 있음
-      };
-      numOfRows: number;
-      pageNo: number;
-      totalCount: number;
+    msgBody?: {
+      busArrivalItem: T;
     };
   };
+}
+
+/**
+ * 도착 예정 차량 한 대의 정보
+ */
+export interface BusArrival {
+  predictTime: number; // 도착 예정 시간 (분)
+  locationNo: number; // 남은 정류장 수
+  plateNo: string; // 차량 번호
+  stationNm: string; // 현재 위치 정류장명
+}
+
+/**
+ * /api/bus 응답 타입. arrivals는 가까운 순으로 최대 2대이며, 비어 있으면 도착 예정 버스가 없는 상태입니다.
+ */
+export interface RouteArrival {
+  routeName: string;
+  routeDestName: string;
+  arrivals: BusArrival[];
 }

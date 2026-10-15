@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrivalTrack } from "@/components/arrival-track";
-import { PULL_THRESHOLD, usePullToRefresh } from "@/hooks/use-pull-to-refresh";
+import { PullIndicator } from "@/components/pull-indicator";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
 import { orderStops } from "@/lib/stop-order";
@@ -133,7 +134,7 @@ export default function Home() {
     };
   }, [fetchAllBusData]);
 
-  const pull = usePullToRefresh(fetchAllBusData);
+  const { pull, refreshing } = usePullToRefresh(fetchAllBusData);
 
   const results = Object.values(arrivalResults);
   const allFailed =
@@ -143,23 +144,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen w-full bg-gray-100">
-      <div
-        className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center"
-        style={{
-          transform: `translateY(${pull - 40}px)`,
-          opacity: pull > 0 ? 1 : 0,
-        }}
-      >
-        <div className="mt-2 rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow">
-          {pull >= PULL_THRESHOLD ? "놓으면 새로고침" : "당겨서 새로고침"}
-        </div>
-      </div>
+      <PullIndicator pull={pull} refreshing={refreshing} />
 
       <div
         className="mx-auto w-full max-w-md px-4 pb-10 pt-4"
         style={{
           transform: `translateY(${pull}px)`,
-          transition: pull ? "none" : "transform 200ms",
+          transition: pull && !refreshing ? "none" : "transform 200ms",
         }}
       >
         <header className="mb-4 flex items-center justify-between">

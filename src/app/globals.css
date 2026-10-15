@@ -128,3 +128,10 @@
 html {
   overscroll-behavior-y: contain;
 }
+
+/* 당겨서 새로고침 스피너: iOS 활동 표시기처럼 스포크 단위로 끊어서 돕니다. */
+@keyframes pull-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

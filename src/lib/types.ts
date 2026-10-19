@@ -59,7 +59,7 @@ export interface RouteArrival {
 export type RouteType = "직행좌석" | "좌석" | "일반" | "마을";
 
 /**
- * 즐겨찾기 정류장 하나와, 그 정류장에서 지켜보는 노선들 (src/lib/favorites.json)
+ * 한 프로필의 즐겨찾기 정류장 하나와, 그 정류장에서 지켜보는 노선들 (src/lib/favorites.json의 profiles.<슬러그>[])
  */
 export interface FavoriteStop {
   alias: string; // 사용자가 붙인 별칭 (예: 판교역)

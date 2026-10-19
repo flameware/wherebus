@@ -143,10 +143,13 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
 
   return (
     <main className="min-h-screen w-full bg-gray-100">
+      {/* iOS 26부터 홈 화면 웹앱은 화면 위쪽에 블러를 깔아 헤더가 흐려집니다. 배경색이 있는 sticky 띠가
+          위쪽 가장자리를 덮고 있으면 WebKit이 블러 대신 그 색을 씁니다. 화면 배경과 같은 색이라 보이지 않습니다. */}
+      <div aria-hidden className="sticky top-0 z-30 h-4 bg-gray-100" />
       <PullIndicator pull={pull} refreshing={refreshing} />
 
       <div
-        className="mx-auto w-full max-w-md px-4 pb-10 pt-4"
+        className="mx-auto w-full max-w-md px-4 pb-10"
         style={{
           transform: `translateY(${pull}px)`,
           transition: pull && !refreshing ? "none" : "transform 200ms",

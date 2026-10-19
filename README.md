@@ -1,10 +1,11 @@
 # 버스어딨니
 
-자주 타는 버스가 자주 가는 정류장에 언제 오는지 한눈에 보여주는 개인용 실시간 도착 정보 앱입니다.
+자주 타는 버스가 자주 가는 정류장에 언제 오는지 한눈에 보여주는 실시간 도착 정보 앱입니다. 가족처럼 가까운 몇 사람이 각자의 프로필로 나눠 씁니다.
 경기도 버스도착정보(GBIS) 오픈 API를 사용하며, 모바일 홈 화면에 추가해 쓰는 PWA 형태로 만들었습니다.
 
 ## 주요 기능
 
+- **프로필**: `/sohn`, `/choi`처럼 주소 뒤의 이름으로 사람마다 다른 즐겨찾기를 봅니다. `/`는 기본 프로필입니다.
 - **즐겨찾기 정류장·노선만 표시**: 복잡한 버스 앱 대신 내가 보는 정류장과 노선만 카드로 보여줍니다.
 - **도착 예정 차량 2대**: 노선마다 가까운 순으로 최대 두 대의 남은 시간, 남은 정류장 수, 현재 위치를 표시합니다.
 - **우선 시간대**: 정류장에 시간대(예: 출근 08~10시)를 지정하면 그 시간에 해당 정류장이 맨 위로 올라옵니다.
@@ -36,21 +37,31 @@ DATA_GO_KR_API_KEY=발급받은_인증키
 
 ### 3. 즐겨찾기 설정
 
-`src/lib/favorites.json`에 지켜볼 정류장과 노선을 적습니다. 앱 안에서 편집하는 기능은 없고, 이 파일이 설정의 전부입니다.
+`src/lib/favorites.json`에 프로필마다 지켜볼 정류장과 노선을 적습니다. 앱 안에서 편집하는 기능은 없고, 이 파일이 설정의 전부입니다.
 
 ```json
-[
-  {
-    "alias": "판교역",
-    "stopName": "판교역동편",
-    "priorityHours": [8, 10],
-    "nodeId": "GGB206000637",
-    "routes": [
-      { "routeId": "GGB204000079", "routeName": "380", "routeType": "일반" }
-    ]
+{
+  "defaultProfile": "sohn",
+  "profiles": {
+    "sohn": [
+      {
+        "alias": "판교역",
+        "stopName": "판교역동편",
+        "priorityHours": [8, 10],
+        "nodeId": "GGB206000637",
+        "routes": [
+          { "routeId": "GGB204000079", "routeName": "380", "routeType": "일반" }
+        ]
+      }
+    ],
+    "choi": []
   }
-]
+}
 ```
+
+- `profiles`의 키가 프로필 슬러그입니다. `/sohn`, `/choi`로 열리고, 없는 슬러그는 404입니다. 영문 소문자를 추천합니다.
+- `defaultProfile`은 `/`로 들어왔을 때 보여줄 프로필입니다. `profiles`에 없는 이름이면 빌드가 실패합니다.
+- 정류장 항목의 필드는 아래와 같습니다.
 
 | 필드 | 설명 |
 | :--- | :--- |
@@ -62,7 +73,7 @@ DATA_GO_KR_API_KEY=발급받은_인증키
 | `routes[].routeName` | 노선 번호 (예: `380`) |
 | `routes[].routeType` | `직행좌석`, `좌석`, `일반`, `마을` 중 하나. 배지 색을 정합니다. |
 
-정류소 ID와 노선 ID는 GBIS 정류소·노선 조회 API나 공공데이터포털의 참고 문서로 찾을 수 있습니다.
+정류소 ID와 노선 ID를 찾는 방법은 [`API_SPEC.md`](./API_SPEC.md)의 "정류소·노선 ID 찾기"를 참고하세요.
 
 ### 4. 실행
 
@@ -85,18 +96,24 @@ npm run dev
 ```
 src/
 ├── app/
-│   ├── page.tsx            # 메인 화면: 즐겨찾기 조회, 자동 갱신, 정류장 정렬
+│   ├── page.tsx            # /: 기본 프로필 화면
+│   ├── [profile]/
+│   │   ├── page.tsx        # /<프로필>: 프로필 화면 (없는 프로필은 404)
+│   │   └── manifest.webmanifest/route.ts  # 프로필별 PWA 매니페스트 (start_url)
 │   ├── layout.tsx
-│   ├── manifest.ts         # PWA 매니페스트
+│   ├── manifest.ts         # /의 PWA 매니페스트
 │   ├── icon.tsx, apple-icon.tsx
 │   └── api/bus/route.ts    # GBIS를 호출해 응답을 정리하는 내부 API
 ├── components/
+│   ├── arrival-board.tsx   # 한 프로필의 즐겨찾기 조회, 자동 갱신, 정류장 정렬
 │   ├── arrival-track.tsx   # 남은 정류장 수를 트랙 위에 그리는 컴포넌트
 │   └── ui/                 # shadcn/ui 컴포넌트
 ├── hooks/
 │   └── use-pull-to-refresh.ts
 └── lib/
-    ├── favorites.json      # 즐겨찾기 설정 (사용자가 직접 편집)
+    ├── favorites.json      # 프로필별 즐겨찾기 설정 (직접 편집)
+    ├── profiles.ts         # favorites.json을 읽어 프로필별 정류장을 돌려줌 (서버 전용)
+    ├── app-manifest.ts     # PWA 매니페스트 내용
     ├── types.ts            # GBIS 응답 및 앱 내부 타입
     ├── stop-order.ts       # 우선 시간대 기준 정류장 정렬
     ├── arrival-display.ts  # 곧 도착/흐림/오래됨 기준값과 노선 색

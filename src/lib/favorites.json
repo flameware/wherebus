@@ -1,21 +1,58 @@
-[
-  {
-    "alias": "판교역",
-    "stopName": "판교역동편",
-    "priorityHours": [8, 10],
-    "nodeId": "GGB206000637",
-    "routes": [
-      { "routeId": "GGB204000079", "routeName": "380", "routeType": "일반" },
-      { "routeId": "GGB204000051", "routeName": "390", "routeType": "일반" }
-    ]
-  },
-  {
-    "alias": "아데나팰리스",
-    "stopName": "아데나팰리스",
-    "priorityHours": [16, 21],
-    "nodeId": "GGB206000199",
-    "routes": [
-      { "routeId": "GGB204000022", "routeName": "220", "routeType": "일반" }
+{
+  "defaultProfile": "sohn",
+  "profiles": {
+    "sohn": [
+      {
+        "alias": "판교역",
+        "stopName": "판교역동편",
+        "priorityHours": [8, 10],
+        "nodeId": "GGB206000637",
+        "routes": [
+          { "routeId": "GGB204000079", "routeName": "380", "routeType": "일반" },
+          { "routeId": "GGB204000051", "routeName": "390", "routeType": "일반" }
+        ]
+      },
+      {
+        "alias": "아데나팰리스",
+        "stopName": "아데나팰리스",
+        "priorityHours": [16, 21],
+        "nodeId": "GGB206000199",
+        "routes": [
+          { "routeId": "GGB204000022", "routeName": "220", "routeType": "일반" }
+        ]
+      }
+    ],
+    "choi": [
+      {
+        "alias": "판교포레라움",
+        "stopName": "판교포레라움아파트후문",
+        "priorityHours": [6, 8],
+        "nodeId": "GGB206000653",
+        "routes": [
+          { "routeId": "GGB204000056", "routeName": "4500", "routeType": "직행좌석" },
+          { "routeId": "GGB200000314", "routeName": "4000", "routeType": "직행좌석" }
+        ]
+      },
+      {
+        "alias": "우만주공4단지",
+        "stopName": "우만주공4단지",
+        "priorityHours": [8, 9],
+        "nodeId": "GGB200000197",
+        "routes": [
+          { "routeId": "GGB200000060", "routeName": "11", "routeType": "일반" },
+          { "routeId": "GGB200000008", "routeName": "400", "routeType": "일반" }
+        ]
+      },
+      {
+        "alias": "수원역",
+        "stopName": "수원역.지하상가13번출구",
+        "priorityHours": [15, 17],
+        "nodeId": "GGB202000088",
+        "routes": [
+          { "routeId": "GGB234000015", "routeName": "1007", "routeType": "직행좌석" },
+          { "routeId": "GGB233000464", "routeName": "1007(예약)", "routeType": "직행좌석" }
+        ]
+      }
     ]
   }
-]
+}

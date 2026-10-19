@@ -16,7 +16,7 @@
 | `nodeId` | 예 | 정류소 ID |
 | `routeId` | 예 | 노선 ID |
 
-- ID는 `src/lib/favorites.json`에 적힌 값을 그대로 넘깁니다.
+- ID는 `src/lib/favorites.json`의 각 프로필에 적힌 값을 그대로 넘깁니다. 이 API는 프로필을 모르며, 같은 정류장·노선을 여러 프로필이 보면 20초 캐시를 함께 씁니다.
 - TAGO 형식(`GGB206000199`)과 GBIS 형식(`206000199`) 모두 받으며, 서버에서 `GGB` 접두사를 제거해 GBIS ID로 변환합니다.
 
 ### 1.2. 응답
@@ -112,7 +112,20 @@ GBIS 응답에서 차량이 없는 칸(`predictTime`·`locationNo`가 빈 문자
 
 ## 3. 정류소·노선 ID 찾기 (참고)
 
-즐겨찾기에 추가할 ID는 TAGO 버스정류소정보 서비스(`https://apis.data.go.kr/1613000/BusSttnInfoInqireService`)의 `/getSttnNoList`로 정류소명을 검색해 찾을 수 있습니다. 경기도 정류소는 `GGB` 접두사가 붙은 ID로 조회되며, 이 형식 그대로 `favorites.json`에 저장하면 됩니다.
+### 3.1. 정류소 ID: GBIS 정류소 조회 서비스
 
-- 이 서비스는 별도 활용 신청이 필요하며, 현재는 신청되어 있지 않습니다.
-- GBIS의 정류소·노선 조회 서비스를 통해서도 찾을 수 있습니다.
+정류소 ID는 공공데이터포털 "경기도_정류소 조회" 서비스의 `getBusStationListv2`로 찾습니다. `DATA_GO_KR_API_KEY`로 활용 신청되어 있습니다.
+
+```
+GET https://apis.data.go.kr/6410000/busstationservice/v2/getBusStationListv2
+    ?serviceKey=<키>&keyword=07587&format=json
+```
+
+- `keyword`에는 정류장 이름이나 정류장 번호(정류장 표지판의 5자리 번호, 예: `07587`)를 넣습니다.
+- 응답의 `busStationList`에 `stationId`, `mobileNo`(정류장 번호), `stationName`이 들어 있습니다. 결과가 하나면 배열이 아닌 객체로 옵니다.
+- `favorites.json`에는 `stationId` 앞에 `GGB`를 붙여 저장합니다 (예: `206000653` → `GGB206000653`).
+- 길 건너 반대 방향 정류장은 이름이 같고 번호만 다릅니다 (예: 판교포레라움아파트후문 `07587` / `07588`). 이름보다 번호로 찾는 것이 안전합니다.
+
+### 3.2. 노선 ID와 조합 확인
+
+노선 ID는 이 서비스로 찾지 않습니다 (경유 노선 조회는 확인하지 않았습니다). 정류소 정보 사이트 등에서 찾은 노선 ID가 맞는지는, 정류소 ID와 함께 `getBusArrivalItemv2`(§2.1)를 호출해 `resultCode`가 `0`인지로 확인합니다. 응답의 `routeName`과 `routeDestName`(방면)으로 노선과 방향도 함께 확인할 수 있습니다.

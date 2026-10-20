@@ -12,6 +12,9 @@ export const STALE_SECONDS = 60;
 // 트랙에 그리는 최대 정거장 수. 이보다 멀리 있는 차량은 트랙 왼쪽 끝에 둡니다.
 export const TRACK_STOPS = 10;
 
+// 트랙 위 두 차량이 이 정거장 수 이하로 붙어 있으면 라벨이 겹치므로 다음 차의 라벨을 숨깁니다.
+export const LABEL_GAP_STOPS = 2;
+
 export const ROUTE_COLORS: Record<RouteType, string> = {
   직행좌석: "#E60012",
   좌석: "#0068B7",

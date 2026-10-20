@@ -2,6 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ROUTE_COLORS,
   TRACK_STOPS,
+  LABEL_GAP_STOPS,
   IMMINENT_MINUTES,
   FAR_MINUTES,
   formatAgo,
@@ -18,8 +19,9 @@ interface ArrivalTrackProps {
 }
 
 // 트랙의 왼쪽 끝은 TRACK_STOPS 정거장 전, 오른쪽 끝은 내 정류장입니다.
+const trackStops = (locationNo: number) => Math.min(locationNo, TRACK_STOPS);
 const trackPosition = (locationNo: number) =>
-  `${(1 - Math.min(locationNo, TRACK_STOPS) / TRACK_STOPS) * 100}%`;
+  `${(1 - trackStops(locationNo) / TRACK_STOPS) * 100}%`;
 
 /**
  * 노선 하나의 도착 예정 차량들이 내 정류장으로 다가오는 모습을 가로 트랙으로 보여줍니다.
@@ -30,6 +32,15 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
     result?.status === "ok" ? result : result?.status === "error" ? result.last : undefined;
   const isStale = result?.status === "error" && shown !== undefined;
   const arrivals = shown?.data.arrivals ?? [];
+  const [first, next] = arrivals;
+  // 두 대 모두 트랙 밖이면 같은 자리에 겹치므로 다음 차는 트랙에 그리지 않습니다.
+  const isNextOffTrack =
+    next !== undefined && first.locationNo > TRACK_STOPS && next.locationNo > TRACK_STOPS;
+  const isNextLabelHidden =
+    next !== undefined &&
+    (isNextOffTrack ||
+      Math.abs(trackStops(next.locationNo) - trackStops(first.locationNo)) <= LABEL_GAP_STOPS);
+  const drawn = isNextOffTrack ? [first] : arrivals;
 
   return (
     <div className={cn("flex min-h-12 items-center gap-3", isStale && "opacity-50")}>
@@ -59,7 +70,7 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
               className="absolute -right-2 -top-1.5 h-4 w-4 rounded-full border-[3px] bg-white"
               style={{ borderColor: color }}
             />
-            {arrivals.map((arrival, i) => {
+            {drawn.map((arrival, i) => {
               const minutes = minutesLeft(arrival, shown.receivedAt, now);
               return (
                 <div
@@ -67,17 +78,19 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                   className="absolute -top-1.5 -translate-x-1/2"
                   style={{ left: trackPosition(arrival.locationNo) }}
                 >
-                  <span
-                    className={cn(
-                      "absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums",
-                      i > 0 && "font-medium text-gray-400",
-                      i === 0 && minutes >= FAR_MINUTES && "text-gray-400",
-                      i === 0 && minutes <= IMMINENT_MINUTES && "text-rose-600",
-                    )}
-                  >
-                    {arrival.locationNo > TRACK_STOPS && "◀ "}
-                    {formatMinutes(minutes)}
-                  </span>
+                  {!(i > 0 && isNextLabelHidden) && (
+                    <span
+                      className={cn(
+                        "absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums",
+                        i > 0 && "font-medium text-gray-400",
+                        i === 0 && minutes >= FAR_MINUTES && "text-gray-400",
+                        i === 0 && minutes <= IMMINENT_MINUTES && "text-rose-600",
+                      )}
+                    >
+                      {arrival.locationNo > TRACK_STOPS && "◀ "}
+                      {formatMinutes(minutes)}
+                    </span>
+                  )}
                   <div
                     className={cn("h-4 w-4 rounded-full ring-2 ring-white", i > 0 && "opacity-40")}
                     style={{ backgroundColor: color }}
@@ -92,6 +105,11 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                 ? "정류장 진입 중"
                 : `${arrivals[0].locationNo}정거장 전 · ${arrivals[0].stationNm}`}
             </span>
+            {isNextLabelHidden && (
+              <span className="shrink-0">
+                다음 차 {formatMinutes(minutesLeft(next, shown.receivedAt, now))}
+              </span>
+            )}
             {isStale && (
               <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
                 {formatAgo(now - shown.receivedAt)} 정보

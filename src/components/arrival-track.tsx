@@ -1,16 +1,18 @@
-import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ROUTE_COLORS,
   TRACK_STOPS,
   LABEL_GAP_STOPS,
-  IMMINENT_MINUTES,
-  FAR_MINUTES,
+  ArrivalEmphasis,
+  arrivalEmphasis,
   formatAgo,
   formatMinutes,
   minutesLeft,
+  routeBadgeColors,
 } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteRoute } from "@/lib/types";
 import { cn } from "@flameware/ui";
+import { Badge } from "@flameware/ui/badge";
+import { Skeleton } from "@flameware/ui/skeleton";
+import { Text } from "@flameware/ui/text";
 
 interface ArrivalTrackProps {
   route: FavoriteRoute;
@@ -23,11 +25,20 @@ const trackStops = (locationNo: number) => Math.min(locationNo, TRACK_STOPS);
 const trackPosition = (locationNo: number) =>
   `${(1 - trackStops(locationNo) / TRACK_STOPS) * 100}%`;
 
+// 회색 위계는 text-muted 하나로 두고, 위계는 opacity와 굵기로 나눕니다.
+const LABEL_EMPHASIS: Record<ArrivalEmphasis, string> = {
+  imminent: "text-danger",
+  normal: "",
+  far: "text-muted opacity-70",
+  secondary: "font-medium text-muted opacity-70",
+};
+
 /**
  * 노선 하나의 도착 예정 차량들이 내 정류장으로 다가오는 모습을 가로 트랙으로 보여줍니다.
  */
 export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
-  const color = ROUTE_COLORS[route.routeType];
+  const badge = routeBadgeColors(route.routeType);
+  const color = badge.background;
   const shown =
     result?.status === "ok" ? result : result?.status === "error" ? result.last : undefined;
   const isStale = result?.status === "error" && shown !== undefined;
@@ -45,20 +56,26 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
   return (
     <div className={cn("flex min-h-12 items-center gap-3", isStale && "opacity-50")}>
       <span
-        className="inline-flex h-8 min-w-12 shrink-0 items-center justify-center rounded-md px-2 text-base font-bold text-white tabular-nums"
-        style={{ backgroundColor: color }}
+        className="inline-flex h-8 min-w-12 shrink-0 items-center justify-center rounded-md px-2 text-base font-bold tabular-nums"
+        style={{ backgroundColor: badge.background, color: badge.foreground }}
       >
         {route.routeName}
       </span>
 
       {!result ? (
-        <Skeleton className="h-5 flex-1" />
+        <Skeleton announce={false} className="h-5 flex-1" />
       ) : !shown ? (
-        <span className="text-sm font-medium text-rose-600">조회 실패</span>
+        <Text as="span" tone="danger" className="font-medium">
+          조회 실패
+        </Text>
       ) : arrivals.length === 0 ? (
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-500">운행 정보 없음</span>
-          <span className="text-xs text-gray-400">첫차/막차 시간 외일 수 있어요</span>
+          <Text as="span" tone="muted" className="font-medium">
+            운행 정보 없음
+          </Text>
+          <Text as="span" size="xs" tone="muted" className="opacity-70">
+            첫차/막차 시간 외일 수 있어요
+          </Text>
         </div>
       ) : (
         <div className="min-w-0 flex-1">
@@ -67,11 +84,12 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
             style={{ backgroundColor: `${color}33` }}
           >
             <div
-              className="absolute -right-2 -top-1.5 h-4 w-4 rounded-full border-[3px] bg-white"
+              className="absolute -right-2 -top-1.5 h-4 w-4 rounded-full border-[3px] bg-surface"
               style={{ borderColor: color }}
             />
             {drawn.map((arrival, i) => {
               const minutes = minutesLeft(arrival, shown.receivedAt, now);
+              const emphasis = arrivalEmphasis(minutes, i === 0 ? "first" : "second");
               return (
                 <div
                   key={i}
@@ -82,9 +100,7 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                     <span
                       className={cn(
                         "absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums",
-                        i > 0 && "font-medium text-gray-400",
-                        i === 0 && minutes >= FAR_MINUTES && "text-gray-400",
-                        i === 0 && minutes <= IMMINENT_MINUTES && "text-rose-600",
+                        LABEL_EMPHASIS[emphasis],
                       )}
                     >
                       {arrival.locationNo > TRACK_STOPS && "◀ "}
@@ -92,14 +108,17 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                     </span>
                   )}
                   <div
-                    className={cn("h-4 w-4 rounded-full ring-2 ring-white", i > 0 && "opacity-40")}
+                    className={cn(
+                      "h-4 w-4 rounded-full ring-2 ring-(--ds-bg-surface)",
+                      emphasis === "secondary" && "opacity-40",
+                    )}
                     style={{ backgroundColor: color }}
                   />
                 </div>
               );
             })}
           </div>
-          <div className="mt-3 flex justify-between gap-2 text-[11px] text-gray-500">
+          <div className="mt-3 flex justify-between gap-2 text-xs text-muted">
             <span className="truncate">
               {arrivals[0].locationNo === 0
                 ? "정류장 진입 중"
@@ -111,9 +130,9 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
               </span>
             )}
             {isStale && (
-              <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
+              <Badge tone="warning" className="shrink-0">
                 {formatAgo(now - shown.receivedAt)} 정보
-              </span>
+              </Badge>
             )}
           </div>
         </div>

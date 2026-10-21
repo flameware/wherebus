@@ -26,11 +26,12 @@ const trackPosition = (locationNo: number) =>
   `${(1 - trackStops(locationNo) / TRACK_STOPS) * 100}%`;
 
 // 회색 위계는 text-muted 하나로 두고, 위계는 opacity와 굵기로 나눕니다.
-const LABEL_EMPHASIS: Record<ArrivalEmphasis, string> = {
-  imminent: "text-danger",
-  normal: "",
-  far: "text-muted opacity-70",
-  secondary: "font-medium text-muted opacity-70",
+// 두 번째 차는 라벨과 함께 점도 흐리게 둡니다.
+const EMPHASIS_CLASSES: Record<ArrivalEmphasis, { label: string; dot: string }> = {
+  imminent: { label: "text-danger", dot: "" },
+  normal: { label: "", dot: "" },
+  far: { label: "text-muted opacity-70", dot: "" },
+  secondary: { label: "font-medium text-muted opacity-70", dot: "opacity-40" },
 };
 
 /**
@@ -38,7 +39,7 @@ const LABEL_EMPHASIS: Record<ArrivalEmphasis, string> = {
  */
 export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
   const badge = routeBadgeColors(route.routeType);
-  const color = badge.background;
+  const routeColor = badge.background;
   const shown =
     result?.status === "ok" ? result : result?.status === "error" ? result.last : undefined;
   const isStale = result?.status === "error" && shown !== undefined;
@@ -81,11 +82,11 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
         <div className="min-w-0 flex-1">
           <div
             className="relative mx-2 mt-6 h-1 rounded-full"
-            style={{ backgroundColor: `${color}33` }}
+            style={{ backgroundColor: `${routeColor}33` }}
           >
             <div
               className="absolute -right-2 -top-1.5 h-4 w-4 rounded-full border-[3px] bg-surface"
-              style={{ borderColor: color }}
+              style={{ borderColor: routeColor }}
             />
             {drawn.map((arrival, i) => {
               const minutes = minutesLeft(arrival, shown.receivedAt, now);
@@ -100,7 +101,7 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                     <span
                       className={cn(
                         "absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-bold tabular-nums",
-                        LABEL_EMPHASIS[emphasis],
+                        EMPHASIS_CLASSES[emphasis].label,
                       )}
                     >
                       {arrival.locationNo > TRACK_STOPS && "◀ "}
@@ -110,9 +111,9 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
                   <div
                     className={cn(
                       "h-4 w-4 rounded-full ring-2 ring-(--ds-bg-surface)",
-                      emphasis === "secondary" && "opacity-40",
+                      EMPHASIS_CLASSES[emphasis].dot,
                     )}
-                    style={{ backgroundColor: color }}
+                    style={{ backgroundColor: routeColor }}
                   />
                 </div>
               );

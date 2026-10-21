@@ -59,7 +59,7 @@ export const arrivalEmphasis = (
   return "normal";
 };
 
-export const formatMinutes =(minutes: number) =>
+export const formatMinutes = (minutes: number) =>
   minutes <= IMMINENT_MINUTES ? "곧 도착" : `${minutes}분`;
 
 export const formatAgo = (ms: number) => {

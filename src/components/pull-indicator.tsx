@@ -31,7 +31,7 @@ export function PullIndicator({ pull, refreshing }: PullIndicatorProps) {
         width="28"
         height="28"
         viewBox="-14 -14 28 28"
-        className="text-gray-500"
+        className="text-muted"
         style={{
           transform: `scale(${armed ? 1 : 0.85})`,
           transition: "transform 150ms",

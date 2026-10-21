@@ -5,8 +5,14 @@ import { PullIndicator } from "@/components/pull-indicator";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
+import { singleFlight } from "@/lib/single-flight";
 import { orderStops } from "@/lib/stop-order";
-import { cn } from "@/lib/utils";
+import { cn } from "@flameware/ui";
+import { Alert } from "@flameware/ui/alert";
+import { Button } from "@flameware/ui/button";
+import { Card } from "@flameware/ui/card";
+import { EmptyState } from "@flameware/ui/empty-state";
+import { Heading, Text } from "@flameware/ui/text";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // 자동 갱신 주기 (밀리초)
@@ -47,7 +53,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
     [stops, orderedAt],
   );
 
-  const fetchAllBusData = useCallback(async () => {
+  const fetchOnce = useCallback(async () => {
     setIsRefreshing(true);
     const fetched: { [key: string]: RouteArrival | null } = {};
 
@@ -103,6 +109,9 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
     setIsRefreshing(false);
   }, [stops]);
 
+  // 자동 갱신, 당겨서 새로고침, 버튼이 겹쳐도 조회는 한 번만 돌게 합니다.
+  const fetchAllBusData = useMemo(() => singleFlight(fetchOnce), [fetchOnce]);
+
   useEffect(() => {
     // 화면이 보이는 동안만 주기적으로 갱신합니다. 탭이나 앱이 숨겨지면
     // 멈춰서 API 호출을 아끼고, 다시 보이면 바로 갱신한 뒤 재개합니다.
@@ -138,100 +147,117 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
   const results = Object.values(arrivalResults);
   const allFailed =
     results.length > 0 && results.every((r) => r.status === "error");
-  const isStale =
+  const isRefreshDelayed =
     lastUpdated !== null && (now - lastUpdated) / 1000 > STALE_SECONDS;
 
   return (
-    <main className="min-h-screen w-full bg-gray-100">
+    <>
       {/* iOS 26부터 홈 화면 웹앱은 화면 위쪽에 블러를 깔아 헤더가 흐려집니다. 배경색이 있는 sticky 띠가
           위쪽 가장자리를 덮고 있으면 WebKit이 블러 대신 그 색을 씁니다. 화면 배경과 같은 색이라 보이지 않습니다. */}
-      <div aria-hidden className="sticky top-0 z-30 h-4 bg-gray-100" />
+      <div aria-hidden className="sticky top-0 z-30 h-4 bg-canvas" />
       <PullIndicator pull={pull} refreshing={refreshing} />
 
       <div
-        className="mx-auto w-full max-w-md px-4 pb-10"
         style={{
           transform: `translateY(${pull}px)`,
           transition: pull && !refreshing ? "none" : "transform 200ms",
         }}
       >
-        <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">버스어딨니</h1>
-          {/* 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다. */}
-          <button
-            onClick={fetchAllBusData}
-            disabled={isRefreshing}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs",
-              isStale ? "bg-amber-100 text-amber-800" : "bg-white text-gray-600",
-            )}
-          >
-            <span
-              className={cn(
-                "h-2 w-2 rounded-full",
-                isRefreshing
-                  ? "animate-pulse bg-blue-500"
-                  : isStale
-                    ? "bg-amber-500"
-                    : "bg-emerald-500",
-              )}
-            />
-            {isRefreshing
-              ? "갱신 중"
-              : lastUpdated === null
-                ? "불러오는 중"
-                : `${formatAgo(now - lastUpdated)} 갱신`}
-          </button>
-        </header>
-
-        {stops.length === 0 && (
-          <p className="rounded-xl bg-white px-4 py-3 text-sm text-gray-600">
-            즐겨찾기 설정이 필요합니다. src/lib/favorites.json 파일을 확인하세요.
-          </p>
-        )}
-
-        {allFailed && (
-          <div className="mb-4 flex items-center justify-between rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            <span>버스 정보를 불러오지 못했어요</span>
-            <button
+        {/* 배경은 body가 canvas로 칠합니다. */}
+        <main className="mx-auto w-full max-w-md px-4 pb-10">
+          <header className="mb-4 flex items-center justify-between gap-4">
+            <Heading level={1} size="2xl">
+              버스어딨니
+            </Heading>
+            {/* 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다.
+                disabled는 DS Button을 50%로 흐려 갱신 중 점까지 흐리므로 aria-disabled만 겁니다.
+                겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다. */}
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={fetchAllBusData}
-              disabled={isRefreshing}
-              className="font-semibold underline"
+              aria-disabled={isRefreshing}
+              className={cn(
+                "gap-1.5 rounded-full text-xs",
+                // 배경은 state 레이어가 --ds-state-base로만 칠하므로 bg-*가 아니라 이 변수를 바꿉니다.
+                isRefreshDelayed &&
+                  "text-warning [--ds-state-base:var(--ds-bg-warning-soft)]",
+              )}
             >
-              다시 시도
-            </button>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-5">
-          {orderedStops.map((stop) => (
-            <section
-              key={stop.nodeId}
-              className="rounded-2xl bg-white p-4 shadow-sm"
-            >
-              <h2 className="mb-3 flex items-baseline gap-2">
-                <span className="text-lg font-bold">{stop.alias}</span>
-                {stop.stopName !== stop.alias && (
-                  <span className="text-xs text-gray-500">{stop.stopName}</span>
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  isRefreshing
+                    ? "animate-pulse bg-accent-solid"
+                    : isRefreshDelayed
+                      ? "bg-warning-solid"
+                      : "bg-success-solid",
                 )}
-              </h2>
-              <div className="flex flex-col gap-5">
-                {stop.routes.map((route) => {
-                  const key = getFavoriteKey(stop.nodeId, route.routeId);
-                  return (
-                    <ArrivalTrack
-                      key={key}
-                      route={route}
-                      result={arrivalResults[key]}
-                      now={now}
-                    />
-                  );
-                })}
+              />
+              {isRefreshing
+                ? "갱신 중"
+                : lastUpdated === null
+                  ? "불러오는 중"
+                  : `${formatAgo(now - lastUpdated)} 갱신`}
+            </Button>
+          </header>
+
+          {stops.length === 0 && (
+            <EmptyState.Root>
+              <EmptyState.Title>즐겨찾기 설정이 필요합니다</EmptyState.Title>
+              <EmptyState.Description>
+                src/lib/favorites.json 파일을 확인하세요.
+              </EmptyState.Description>
+            </EmptyState.Root>
+          )}
+
+          {allFailed && (
+            <Alert.Root tone="danger" className="mb-4">
+              <div className="col-span-2 flex items-center justify-between gap-3">
+                <span>버스 정보를 불러오지 못했어요</span>
+                <Button
+                  variant="link"
+                  onClick={fetchAllBusData}
+                  aria-disabled={isRefreshing}
+                  className="text-danger font-semibold underline"
+                >
+                  다시 시도
+                </Button>
               </div>
-            </section>
-          ))}
-        </div>
+            </Alert.Root>
+          )}
+
+          <div className="flex flex-col gap-5">
+            {orderedStops.map((stop) => (
+              <Card.Root key={stop.nodeId}>
+                <Card.Header>
+                  <Card.Title level={2} className="flex items-baseline gap-2">
+                    {stop.alias}
+                    {stop.stopName !== stop.alias && (
+                      <Text as="span" size="xs" tone="muted">
+                        {stop.stopName}
+                      </Text>
+                    )}
+                  </Card.Title>
+                </Card.Header>
+                <Card.Body className="flex flex-col gap-5">
+                  {stop.routes.map((route) => {
+                    const key = getFavoriteKey(stop.nodeId, route.routeId);
+                    return (
+                      <ArrivalTrack
+                        key={key}
+                        route={route}
+                        result={arrivalResults[key]}
+                        now={now}
+                      />
+                    );
+                  })}
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </div>
+        </main>
       </div>
-    </main>
+    </>
   );
 }

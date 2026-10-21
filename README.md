@@ -17,7 +17,7 @@
 ## 기술 스택
 
 - Next.js 16 (App Router, Route Handlers), React 19, TypeScript
-- Tailwind CSS 4, shadcn/ui, Lucide React
+- Tailwind CSS 4, massive-design 디자인 시스템(`@flameware/ui`, `@flameware/tokens`, GitHub Packages), Pretendard
 - 데이터: 공공데이터포털 "경기도_버스도착정보 조회" (GBIS busarrivalservice v2)
 
 ## 시작하기
@@ -27,7 +27,20 @@
 [공공데이터포털](https://www.data.go.kr)에서 **경기도_버스도착정보 조회** 서비스 활용 신청을 하고 인증키를 받습니다.
 경기도 정류소와 노선만 조회할 수 있습니다.
 
-### 2. 환경 변수 설정
+### 2. 디자인 시스템 패키지 설치 준비
+
+디자인 시스템 `@flameware/ui`, `@flameware/tokens`는 GitHub Packages에서 받습니다. 저장소의 `.npmrc`는 `@flameware` 스코프를 `https://npm.pkg.github.com`으로 보내고 인증 토큰을 `NPM_TOKEN` 환경 변수에서 읽습니다. 토큰 값은 파일에 적지 않습니다.
+
+1. GitHub에서 `read:packages` 권한을 가진 personal access token(classic)을 만듭니다.
+2. 셸 환경 변수로 `NPM_TOKEN`을 둡니다. 비대화형 셸에서도 읽히도록 `~/.zshenv`에 두는 것을 추천합니다.
+
+```bash
+export NPM_TOKEN=ghp_발급받은_토큰
+```
+
+`NPM_TOKEN`이 없거나 만료되면 `npm install`이 401로 실패합니다. 배포 환경(Vercel)에도 같은 `NPM_TOKEN`을 환경 변수로 설정해야 합니다.
+
+### 3. 환경 변수 설정
 
 프로젝트 루트에 `.env.local` 파일을 만들고 키를 넣습니다. 이 키는 서버(Route Handler)에서만 사용되며 브라우저에 노출되지 않습니다.
 
@@ -35,7 +48,7 @@
 DATA_GO_KR_API_KEY=발급받은_인증키
 ```
 
-### 3. 즐겨찾기 설정
+### 4. 즐겨찾기 설정
 
 `src/lib/favorites.json`에 프로필마다 지켜볼 정류장과 노선을 적습니다. 앱 안에서 편집하는 기능은 없고, 이 파일이 설정의 전부입니다.
 
@@ -75,7 +88,7 @@ DATA_GO_KR_API_KEY=발급받은_인증키
 
 정류소 ID와 노선 ID를 찾는 방법은 [`API_SPEC.md`](./API_SPEC.md)의 "정류소·노선 ID 찾기"를 참고하세요.
 
-### 4. 실행
+### 5. 실행
 
 ```bash
 npm install
@@ -107,7 +120,7 @@ src/
 ├── components/
 │   ├── arrival-board.tsx   # 한 프로필의 즐겨찾기 조회, 자동 갱신, 정류장 정렬
 │   ├── arrival-track.tsx   # 남은 정류장 수를 트랙 위에 그리는 컴포넌트
-│   └── ui/                 # shadcn/ui 컴포넌트
+│   └── ui/                 # 전환 전 shadcn/ui 컴포넌트 (massive-design으로 대체 예정)
 ├── hooks/
 │   └── use-pull-to-refresh.ts
 └── lib/
@@ -151,9 +164,10 @@ Route Handler가 GBIS의 `getBusArrivalItemv2`를 호출하고, 차량이 없는
 - [`GLOSSARY.md`](./GLOSSARY.md): 정류장, 별칭, 우선 시간대 등 프로젝트 용어 정의
 - [`PRD.md`](./PRD.md): 제품 요구사항
 - [`API_SPEC.md`](./API_SPEC.md): GBIS 오픈 API와 내부 API 명세
+- [`docs/adr/0001-massive-design-adoption.md`](./docs/adr/0001-massive-design-adoption.md): massive-design 디자인 시스템 채택 결정
 - [`docs/design/mobbin-review.md`](./docs/design/mobbin-review.md): 디자인 리뷰와 개선 방향
 - [`docs/agents/`](./docs/agents/): 이슈 트래커, 트리아지 라벨 등 에이전트 작업 규칙
 
 ## 배포
 
-Next.js 앱이므로 [Vercel](https://vercel.com)에 바로 배포할 수 있습니다. 배포 환경에도 `DATA_GO_KR_API_KEY` 환경 변수를 설정해야 합니다.
+Next.js 앱이므로 [Vercel](https://vercel.com)에 바로 배포할 수 있습니다. 배포 환경에도 `DATA_GO_KR_API_KEY`와 `NPM_TOKEN`(`read:packages`) 환경 변수를 설정해야 합니다.

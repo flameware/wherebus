@@ -67,7 +67,7 @@
 
 ### 3.8. 모바일 최적화 UI/UX
 
-- shadcn/ui 기반의 카드 UI에 큰 숫자 타이포와 노선 색 배지로 가독성을 높입니다.
+- massive-design 디자인 시스템 기반의 카드 UI에 큰 숫자 타이포와 노선 색 배지로 가독성을 높입니다.
 - 로딩 중에는 Skeleton을 표시합니다.
 - 다크 모드를 지원합니다.
 - 웹 앱 매니페스트와 아이콘을 제공해 홈 화면에 독립 앱처럼 설치할 수 있습니다.
@@ -75,7 +75,7 @@
 ## 4. 기술 스택
 
 - **Framework**: Next.js 16 (App Router, Route Handlers)
-- **UI**: React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Lucide React
+- **UI**: React 19, TypeScript, Tailwind CSS 4, massive-design(`@flameware/ui`, `@flameware/tokens`), Pretendard
 - **Data Fetching**: Fetch API
 - **Deployment**: Vercel
 

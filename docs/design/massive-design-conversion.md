@@ -41,7 +41,8 @@
 
 ## 전환 전 준비
 
-1. `.npmrc`에 `@flameware:registry=https://npm.pkg.github.com`와 `FLAMEWARE_PACKAGES_TOKEN`(`read:packages`)을 설정합니다. 로컬과 배포 환경 모두 필요합니다.
+1. investmentdiary(같은 디자인 시스템 소비처, 그쪽 ADR-0017)와 같은 방식으로 인증합니다. 커밋되는 `.npmrc`에 `@flameware:registry=https://npm.pkg.github.com`와 `//npm.pkg.github.com/:_authToken=${NPM_TOKEN}`을 두고, 토큰 값은 파일에 적지 않습니다. `NPM_TOKEN`(`read:packages`)은 로컬과 배포 환경(Vercel) 모두 필요하며, CI를 추가하면 `packages: read` 권한과 `NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}`으로 받습니다.
+1. `globals.css`의 `@import "tailwindcss"`를 `@import "@flameware/ui/styles.css"` 한 줄로 **교체**합니다(추가하면 preflight가 두 번 나옵니다). 패키지 `styles.css`가 tailwind, 토큰, `@source`를 모두 끌고 옵니다.
 2. `globals.css`의 shadcn 토큰과 `@theme inline`, `src/components/ui/*`, `components.json`을 제거합니다. 남기면 `--font-sans`와 `--radius-*`가 충돌합니다.
 3. 쓰지 않는 `lucide-react`(0.562)를 제거하거나, 디자인 시스템 peer 요구에 맞춰 ^1.0으로 올립니다.
 4. 레지스트리 설치만 씁니다. Next 16 Turbopack은 `file:`/`bun link` 심볼릭 링크의 subpath를 찾지 못합니다.

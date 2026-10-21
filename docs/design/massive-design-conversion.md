@@ -16,7 +16,7 @@
 | 지금 UI | 전환 대상 | 비고 |
 |---|---|---|
 | 페이지 `bg-gray-100`, 카드 `bg-white` | `bg-canvas`, `bg-surface` | |
-| 콘텐츠 컬럼과 헤더 | `PageShell` (`contentWidthClassName="max-w-md"`, nav 없음) | 헤더에 `border-b`와 surface 배경이 생깁니다 |
+| 콘텐츠 컬럼과 헤더 | 앱에서 조립 (`max-w-md`, `Heading` + 신선도 알약) | `PageShell`(0.9.0)은 nav가 필수이고 헤더를 surface 배경과 `border-b`로 고정해, canvas 화면 위에 흰 띠가 생겨 쓰지 않습니다 |
 | 정류장 카드 | `Card.Root/Header/Title/Body` | radius 18px → 10px |
 | 앱 제목, 별칭 | `Heading level={1} size="2xl"`, `Heading level={2} size="lg"` | |
 | 정식 정류장명, 상태 문구 | `Text size="xs" tone="muted"`, `tone="danger"` | |

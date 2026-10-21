@@ -12,18 +12,11 @@ import { Alert } from "@flameware/ui/alert";
 import { Button } from "@flameware/ui/button";
 import { Card } from "@flameware/ui/card";
 import { EmptyState } from "@flameware/ui/empty-state";
-import { PageShell, type PageShellNav } from "@flameware/ui/page-shell";
 import { Heading, Text } from "@flameware/ui/text";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // 자동 갱신 주기 (밀리초)
 const REFRESH_INTERVAL_MS = 30_000;
-
-// 화면이 하나뿐이라 탭 내비가 없습니다. PageShell이 nav를 꼭 받으므로 빈 값을 넘깁니다.
-// DS 내부 구현에 기대는 우회입니다: @flameware/ui 0.9.0의 PageShell은 nav가 필수이고 빈 nav에도
-// role=tablist를 그려서, 아래 className으로 그 목록을 숨깁니다. DS가 nav를 선택으로 바꾸면
-// 이 값과 [&_[role=tablist]]:hidden을 함께 지웁니다.
-const EMPTY_NAV: PageShellNav = { items: [], value: "", onValueChange: () => {} };
 
 const getFavoriteKey = (nodeId: string, routeId: string) =>
   `${nodeId}-${routeId}`;
@@ -170,53 +163,45 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
           transition: pull && !refreshing ? "none" : "transform 200ms",
         }}
       >
-        {/* PageShell은 빈 nav에도 탭 목록을 그리므로 숨깁니다. 위 sticky 띠가 높이를 차지해
-            min-h-screen이면 늘 스크롤이 생기므로 최소 높이는 풉니다(배경은 body가 canvas로 칠합니다). */}
-        <PageShell
-          className="min-h-0 bg-canvas [&_[role=tablist]]:hidden"
-          contentWidthClassName="max-w-md"
-          nav={EMPTY_NAV}
-          header={{
-            left: (
-              <Heading level={1} size="2xl">
-                버스어딨니
-              </Heading>
-            ),
-            right: (
-              // 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다.
-              // disabled는 DS Button을 50%로 흐려 갱신 중 점까지 흐리므로 aria-disabled만 겁니다.
-              // 겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다.
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={fetchAllBusData}
-                aria-disabled={isRefreshing}
+        {/* 배경은 body가 canvas로 칠합니다. */}
+        <main className="mx-auto w-full max-w-md px-4 pb-10">
+          <header className="mb-4 flex items-center justify-between gap-4">
+            <Heading level={1} size="2xl">
+              버스어딨니
+            </Heading>
+            {/* 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다.
+                disabled는 DS Button을 50%로 흐려 갱신 중 점까지 흐리므로 aria-disabled만 겁니다.
+                겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다. */}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={fetchAllBusData}
+              aria-disabled={isRefreshing}
+              className={cn(
+                "gap-1.5 rounded-full text-xs",
+                // 배경은 state 레이어가 --ds-state-base로만 칠하므로 bg-*가 아니라 이 변수를 바꿉니다.
+                isRefreshDelayed &&
+                  "text-warning [--ds-state-base:var(--ds-bg-warning-soft)]",
+              )}
+            >
+              <span
                 className={cn(
-                  "gap-1.5 rounded-full text-xs",
-                  // 배경은 state 레이어가 --ds-state-base로만 칠하므로 bg-*가 아니라 이 변수를 바꿉니다.
-                  isRefreshDelayed &&
-                    "text-warning [--ds-state-base:var(--ds-bg-warning-soft)]",
+                  "size-2 rounded-full",
+                  isRefreshing
+                    ? "animate-pulse bg-accent-solid"
+                    : isRefreshDelayed
+                      ? "bg-warning-solid"
+                      : "bg-success-solid",
                 )}
-              >
-                <span
-                  className={cn(
-                    "size-2 rounded-full",
-                    isRefreshing
-                      ? "animate-pulse bg-accent-solid"
-                      : isRefreshDelayed
-                        ? "bg-warning-solid"
-                        : "bg-success-solid",
-                  )}
-                />
-                {isRefreshing
-                  ? "갱신 중"
-                  : lastUpdated === null
-                    ? "불러오는 중"
-                    : `${formatAgo(now - lastUpdated)} 갱신`}
-              </Button>
-            ),
-          }}
-        >
+              />
+              {isRefreshing
+                ? "갱신 중"
+                : lastUpdated === null
+                  ? "불러오는 중"
+                  : `${formatAgo(now - lastUpdated)} 갱신`}
+            </Button>
+          </header>
+
           {stops.length === 0 && (
             <EmptyState.Root>
               <EmptyState.Title>즐겨찾기 설정이 필요합니다</EmptyState.Title>
@@ -271,7 +256,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
               </Card.Root>
             ))}
           </div>
-        </PageShell>
+        </main>
       </div>
     </>
   );

@@ -10,7 +10,7 @@ import {
   minutesLeft,
 } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteRoute } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@flameware/ui";
 
 interface ArrivalTrackProps {
   route: FavoriteRoute;

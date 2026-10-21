@@ -6,7 +6,7 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
 import { orderStops } from "@/lib/stop-order";
-import { cn } from "@/lib/utils";
+import { cn } from "@flameware/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // 자동 갱신 주기 (밀리초)

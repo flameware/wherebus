@@ -1,17 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { APP_THEME_COLOR } from "@/lib/app-icon";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "버스어딨니",
@@ -35,9 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      {/* 글꼴은 globals.css가 로드하는 Pretendard이고, --font-sans는 디자인 시스템 정의를 따릅니다. */}
+      <body className="font-sans antialiased">
         {children}
       </body>
     </html>

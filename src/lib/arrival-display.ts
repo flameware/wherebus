@@ -1,3 +1,4 @@
+import { palette } from "@flameware/tokens";
 import { BusArrival, RouteType } from "@/lib/types";
 
 // 이 분 이하로 남으면 "곧 도착"으로 강조합니다.
@@ -23,6 +24,14 @@ export const ROUTE_COLORS: Record<RouteType, string> = {
 };
 
 /**
+ * 노선 번호 배지의 배경/글자 색. 배경은 노선 색 그대로이고, 밝은 마을 노란색 위에만 검정 글자를 씁니다.
+ */
+export const routeBadgeColors = (routeType: RouteType) => ({
+  background: ROUTE_COLORS[routeType],
+  foreground: routeType === "마을" ? palette["base.black"] : palette["base.white"],
+});
+
+/**
  * 받은 뒤 흐른 시간만큼 줄어든 남은 분. GBIS 값이 분 단위라서 초 단위로는 줄이지 않습니다.
  */
 export const minutesLeft = (
@@ -32,7 +41,25 @@ export const minutesLeft = (
 ) =>
   Math.max(0, arrival.predictTime - Math.floor((now - receivedAt) / 60_000));
 
-export const formatMinutes = (minutes: number) =>
+/** 도착 예정 차량의 순번. 즐겨찾기마다 가까운 순으로 최대 두 대입니다. */
+export type ArrivalOrder = "first" | "second";
+
+/**
+ * 트랙에서 차량을 얼마나 강조할지. 곧 도착한 첫 차만 강조하고, 먼 첫 차와 두 번째 차는 흐리게 둡니다.
+ */
+export type ArrivalEmphasis = "imminent" | "normal" | "far" | "secondary";
+
+export const arrivalEmphasis = (
+  minutes: number,
+  order: ArrivalOrder,
+): ArrivalEmphasis => {
+  if (order === "second") return "secondary";
+  if (minutes <= IMMINENT_MINUTES) return "imminent";
+  if (minutes >= FAR_MINUTES) return "far";
+  return "normal";
+};
+
+export const formatMinutes =(minutes: number) =>
   minutes <= IMMINENT_MINUTES ? "곧 도착" : `${minutes}분`;
 
 export const formatAgo = (ms: number) => {

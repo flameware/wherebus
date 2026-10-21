@@ -5,6 +5,7 @@ import { PullIndicator } from "@/components/pull-indicator";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
+import { singleFlight } from "@/lib/single-flight";
 import { orderStops } from "@/lib/stop-order";
 import { cn } from "@flameware/ui";
 import { Alert } from "@flameware/ui/alert";
@@ -19,6 +20,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const REFRESH_INTERVAL_MS = 30_000;
 
 // 화면이 하나뿐이라 탭 내비가 없습니다. PageShell이 nav를 꼭 받으므로 빈 값을 넘깁니다.
+// DS 내부 구현에 기대는 우회입니다: @flameware/ui 0.9.0의 PageShell은 nav가 필수이고 빈 nav에도
+// role=tablist를 그려서, 아래 className으로 그 목록을 숨깁니다. DS가 nav를 선택으로 바꾸면
+// 이 값과 [&_[role=tablist]]:hidden을 함께 지웁니다.
 const EMPTY_NAV: PageShellNav = { items: [], value: "", onValueChange: () => {} };
 
 const getFavoriteKey = (nodeId: string, routeId: string) =>
@@ -56,7 +60,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
     [stops, orderedAt],
   );
 
-  const fetchAllBusData = useCallback(async () => {
+  const fetchOnce = useCallback(async () => {
     setIsRefreshing(true);
     const fetched: { [key: string]: RouteArrival | null } = {};
 
@@ -112,6 +116,9 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
     setIsRefreshing(false);
   }, [stops]);
 
+  // 자동 갱신, 당겨서 새로고침, 버튼이 겹쳐도 조회는 한 번만 돌게 합니다.
+  const fetchAllBusData = useMemo(() => singleFlight(fetchOnce), [fetchOnce]);
+
   useEffect(() => {
     // 화면이 보이는 동안만 주기적으로 갱신합니다. 탭이나 앱이 숨겨지면
     // 멈춰서 API 호출을 아끼고, 다시 보이면 바로 갱신한 뒤 재개합니다.
@@ -147,7 +154,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
   const results = Object.values(arrivalResults);
   const allFailed =
     results.length > 0 && results.every((r) => r.status === "error");
-  const isStale =
+  const isRefreshDelayed =
     lastUpdated !== null && (now - lastUpdated) / 1000 > STALE_SECONDS;
 
   return (
@@ -177,15 +184,17 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
             ),
             right: (
               // 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다.
+              // disabled는 DS Button을 50%로 흐려 갱신 중 점까지 흐리므로 aria-disabled만 겁니다.
+              // 겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다.
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={fetchAllBusData}
-                disabled={isRefreshing}
+                aria-disabled={isRefreshing}
                 className={cn(
                   "gap-1.5 rounded-full text-xs",
                   // 배경은 state 레이어가 --ds-state-base로만 칠하므로 bg-*가 아니라 이 변수를 바꿉니다.
-                  isStale &&
+                  isRefreshDelayed &&
                     "text-warning [--ds-state-base:var(--ds-bg-warning-soft)]",
                 )}
               >
@@ -194,7 +203,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
                     "size-2 rounded-full",
                     isRefreshing
                       ? "animate-pulse bg-accent-solid"
-                      : isStale
+                      : isRefreshDelayed
                         ? "bg-warning-solid"
                         : "bg-success-solid",
                   )}
@@ -224,7 +233,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
                 <Button
                   variant="link"
                   onClick={fetchAllBusData}
-                  disabled={isRefreshing}
+                  aria-disabled={isRefreshing}
                   className="text-danger font-semibold underline"
                 >
                   다시 시도

@@ -119,8 +119,7 @@ src/
 │   └── api/bus/route.ts    # GBIS를 호출해 응답을 정리하는 내부 API
 ├── components/
 │   ├── arrival-board.tsx   # 한 프로필의 즐겨찾기 조회, 자동 갱신, 정류장 정렬
-│   ├── arrival-track.tsx   # 남은 정류장 수를 트랙 위에 그리는 컴포넌트
-│   └── ui/                 # 전환 전 shadcn/ui 컴포넌트 (massive-design으로 대체 예정)
+│   └── arrival-track.tsx   # 남은 정류장 수를 트랙 위에 그리는 컴포넌트
 ├── hooks/
 │   └── use-pull-to-refresh.ts
 └── lib/
@@ -130,6 +129,7 @@ src/
     ├── types.ts            # GBIS 응답 및 앱 내부 타입
     ├── stop-order.ts       # 우선 시간대 기준 정류장 정렬
     ├── arrival-display.ts  # 곧 도착/흐림/오래됨 기준값과 노선 색
+    ├── single-flight.ts    # 겹친 조회를 한 번으로 합치는 래퍼
     └── app-icon.tsx
 ```
 

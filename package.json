@@ -11,8 +11,6 @@
   "dependencies": {
     "@flameware/tokens": "^0.9.0",
     "@flameware/ui": "^0.9.0",
-    "@radix-ui/react-slot": "^1.2.4",
-    "class-variance-authority": "^0.7.1",
     "next": "16.4.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",

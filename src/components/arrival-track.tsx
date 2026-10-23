@@ -123,7 +123,7 @@ export function ArrivalTrack({ route, result, now }: ArrivalTrackProps) {
             <span className="truncate">
               {arrivals[0].locationNo === 0
                 ? "정류장 진입 중"
-                : `${arrivals[0].locationNo}정거장 전 · ${arrivals[0].stationNm}`}
+                : `${arrivals[0].locationNo}정거장 전`}
             </span>
             {isNextLabelHidden && (
               <span className="shrink-0">

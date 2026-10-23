@@ -1,5 +1,5 @@
 /**
- * 경기도 버스도착정보 v2 /getBusArrivalItemv2 API의 응답 아이템 타입입니다.
+ * 경기도 버스도착정보 v2 /getBusArrivalListv2 API의 응답 아이템 타입입니다.
  * 버스가 없는 칸은 숫자 대신 빈 문자열("")로 내려옵니다.
  */
 export interface GbisBusArrivalItem {
@@ -11,10 +11,6 @@ export interface GbisBusArrivalItem {
   locationNo2: number | "";
   predictTime1: number | ""; // 첫 번째 차량의 도착 예정 시간 (분)
   predictTime2: number | "";
-  plateNo1: string; // 첫 번째 차량 번호
-  plateNo2: string;
-  stationNm1: string; // 첫 번째 차량의 현재 위치 정류장명
-  stationNm2: string;
 }
 
 /**
@@ -29,7 +25,7 @@ export interface GbisResponse<T> {
       resultMessage: string;
     };
     msgBody?: {
-      busArrivalItem: T;
+      busArrivalList: T | T[];
     };
   };
 }
@@ -40,16 +36,15 @@ export interface GbisResponse<T> {
 export interface BusArrival {
   predictTime: number; // 도착 예정 시간 (분)
   locationNo: number; // 남은 정류장 수
-  plateNo: string; // 차량 번호
-  stationNm: string; // 현재 위치 정류장명
 }
 
 /**
  * /api/bus 응답 타입. arrivals는 가까운 순으로 최대 2대이며, 비어 있으면 도착 예정 버스가 없는 상태입니다.
+ * 정류장 도착 목록에 노선이 없으면 routeName과 routeDestName 없이 빈 arrivals만 옵니다.
  */
 export interface RouteArrival {
-  routeName: string;
-  routeDestName: string;
+  routeName?: string;
+  routeDestName?: string;
   arrivals: BusArrival[];
 }
 

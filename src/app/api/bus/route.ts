@@ -28,16 +28,12 @@ const toBusArrival = (
   if (predictTime === "" || locationNo === "") {
     return null;
   }
-  return {
-    predictTime,
-    locationNo,
-    plateNo: item[`plateNo${n}`],
-    stationNm: item[`stationNm${n}`],
-  };
+  return { predictTime, locationNo };
 };
 
 /**
  * 정류소 ID와 노선 ID를 기반으로 경기도 버스도착정보(GBIS)에서 도착 정보를 조회합니다.
+ * 정류소의 전체 도착 목록을 받아 해당 노선만 골라냅니다.
  * @param req NextRequest
  * @returns NextResponse
  */
@@ -63,17 +59,16 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const API_ENDPOINT = "/getBusArrivalItemv2";
+  const API_ENDPOINT = "/getBusArrivalListv2";
   const query = new URLSearchParams({
     stationId: toGbisId(nodeId),
-    routeId: toGbisId(routeId),
     format: "json",
   });
   const serviceUrl = `${API_BASE_URL}${API_ENDPOINT}?${query.toString()}&serviceKey=${apiKey}`;
 
   try {
     // GBIS 일일 호출 한도(10,000건)를 지키기 위해 접속자 수와 관계없이
-    // 정류장·노선별로 20초에 최대 1번만 호출합니다.
+    // 정류장별로 20초에 최대 1번만 호출합니다. 같은 정류장의 노선들은 캐시를 함께 씁니다.
     const apiRes = await fetch(serviceUrl, {
       next: { revalidate: CACHE_SECONDS },
     });
@@ -97,7 +92,15 @@ export async function GET(req: NextRequest) {
       throw new Error(`API Error: ${resultMessage} (Code: ${resultCode})`);
     }
 
-    const item = jsonData.response.msgBody.busArrivalItem;
+    // 결과가 하나면 배열이 아닌 객체로 옵니다.
+    const items = [jsonData.response.msgBody.busArrivalList].flat();
+    const item = items.find((i) => String(i.routeId) === toGbisId(routeId));
+
+    // 지금 정류소에 오는 차량이 없는 노선은 목록에서 빠지므로 도착 예정 버스가 없는 상태로 돌려줍니다.
+    if (!item) {
+      return NextResponse.json({ arrivals: [] } satisfies RouteArrival);
+    }
+
     const routeArrival: RouteArrival = {
       routeName: String(item.routeName),
       routeDestName: item.routeDestName,

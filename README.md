@@ -137,15 +137,15 @@ src/
 
 `GET /api/bus?nodeId=<정류소 ID>&routeId=<노선 ID>`
 
-Route Handler가 GBIS의 `getBusArrivalItemv2`를 호출하고, 차량이 없는 칸(빈 문자열)을 걸러낸 뒤 아래 형태로 돌려줍니다.
-일일 호출 한도(10,000건)를 지키기 위해 정류장·노선 조합마다 20초 동안 응답을 캐시합니다.
+Route Handler가 GBIS의 `getBusArrivalListv2`로 정류장의 도착 목록을 받아 해당 노선만 골라내고, 차량이 없는 칸(빈 문자열)을 걸러낸 뒤 아래 형태로 돌려줍니다.
+일일 호출 한도(10,000건)를 지키기 위해 정류장마다 20초 동안 응답을 캐시합니다. 같은 정류장의 노선들은 이 캐시를 함께 씁니다.
 
 ```json
 {
   "routeName": "380",
   "routeDestName": "종점 방면",
   "arrivals": [
-    { "predictTime": 5, "locationNo": 3, "plateNo": "경기70아1234", "stationNm": "현재 위치 정류장" }
+    { "predictTime": 5, "locationNo": 3 }
   ]
 }
 ```
@@ -153,7 +153,7 @@ Route Handler가 GBIS의 `getBusArrivalItemv2`를 호출하고, 차량이 없는
 | 상태 | 의미 |
 | :--- | :--- |
 | 400 | `nodeId` 또는 `routeId` 누락 |
-| 404 | 결과 없음 (정류소에 해당 노선이 없는 등) |
+| 404 | 결과 없음 (GBIS `resultCode` 4) |
 | 500 | 서버에 API 키가 설정되지 않음 |
 | 502 | GBIS 호출 실패 |
 

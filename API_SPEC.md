@@ -16,7 +16,7 @@
 | `nodeId` | 예 | 정류소 ID |
 | `routeId` | 예 | 노선 ID |
 
-- ID는 `src/lib/favorites.json`의 각 프로필에 적힌 값을 그대로 넘깁니다. 이 API는 프로필을 모르며, 같은 정류장·노선을 여러 프로필이 보면 20초 캐시를 함께 씁니다.
+- ID는 `src/lib/favorites.json`의 각 프로필에 적힌 값을 그대로 넘깁니다. 이 API는 프로필을 모르며, 같은 정류장을 여러 프로필이 보면 20초 캐시를 함께 씁니다.
 - TAGO 형식(`GGB206000199`)과 GBIS 형식(`206000199`) 모두 받으며, 서버에서 `GGB` 접두사를 제거해 GBIS ID로 변환합니다.
 
 ### 1.2. 응답
@@ -24,9 +24,9 @@
 | 상태 | 본문 | 의미 |
 | :--- | :--- | :--- |
 | 200 | `{ routeName, routeDestName, arrivals: [...] }` | 정상. `arrivals`는 가까운 순 최대 2대 |
-| 200 | `{ ..., arrivals: [] }` | 도착 예정 버스 없음 |
+| 200 | `{ ..., arrivals: [] }` | 도착 예정 버스 없음 (정류장 도착 목록에 노선이 없으면 `{ arrivals: [] }`) |
 | 400 | `{ error }` | `nodeId` 또는 `routeId` 누락 |
-| 404 | `{ error }` | GBIS 결과 없음 (정류소에 해당 노선이 없는 등 잘못된 ID 조합) |
+| 404 | `{ error }` | GBIS 결과 없음 (`resultCode` 4) |
 | 500 | `{ error }` | 서버에 API 키 미설정 |
 | 502 | `{ error }` | GBIS 호출 실패 또는 알 수 없는 결과 코드 |
 
@@ -37,9 +37,7 @@
   "arrivals": [
     {
       "predictTime": 5,
-      "locationNo": 3,
-      "plateNo": "경기70아1234",
-      "stationNm": "현재 위치 정류장"
+      "locationNo": 3
     }
   ]
 }
@@ -49,16 +47,14 @@
 | :--- | :--- |
 | `predictTime` | 도착 예정 시간 (분). GBIS가 분 단위로만 주므로 초 단위 표시는 불가능합니다. |
 | `locationNo` | 남은 정류장 수 |
-| `plateNo` | 차량 번호 |
-| `stationNm` | 차량이 지금 지나는 정류장명 |
 
 GBIS 응답에서 차량이 없는 칸(`predictTime`·`locationNo`가 빈 문자열)은 걸러내고 `arrivals`에 넣지 않습니다.
 
 ### 1.3. 캐시와 호출 한도
 
 - GBIS 일일 호출 한도는 10,000건입니다.
-- 접속자 수와 관계없이 정류장·노선 조합마다 20초에 최대 1번만 GBIS를 호출하도록, 서버에서 `fetch`의 `next.revalidate`로 20초 동안 응답을 캐시합니다.
-- 화면은 30초마다, 그리고 탭이나 앱으로 돌아왔을 때 다시 조회합니다. 즐겨찾기 노선 수만큼 호출이 발생합니다.
+- 접속자 수와 관계없이 정류장마다 20초에 최대 1번만 GBIS를 호출하도록, 서버에서 `fetch`의 `next.revalidate`로 20초 동안 응답을 캐시합니다. 같은 정류장의 노선들은 이 캐시를 함께 씁니다.
+- 화면은 30초마다, 그리고 탭이나 앱으로 돌아왔을 때 다시 조회합니다. 즐겨찾기 노선 수만큼 `/api/bus` 호출이 발생하지만, GBIS 호출은 정류장 수만큼만 발생합니다.
 
 ## 2. 외부 API: 경기도 버스도착정보 조회 (GBIS busarrivalservice v2)
 
@@ -68,30 +64,31 @@ GBIS 응답에서 차량이 없는 칸(`predictTime`·`locationNo`가 빈 문자
 - **형식**: REST (GET). XML과 JSON을 지원하며, JSON을 받으려면 `format=json`이 필수입니다.
 - **지원 범위**: 경기도 정류소와 노선만 조회할 수 있습니다.
 
-### 2.1. 버스도착정보항목 조회 `GET /getBusArrivalItemv2`
+### 2.1. 버스도착정보목록 조회 `GET /getBusArrivalListv2`
 
-특정 정류소에서 특정 노선의 가장 가까운 차량 2대의 도착 정보를 조회합니다. 앱이 사용하는 유일한 엔드포인트입니다.
+특정 정류소에 오는 모든 노선의 가장 가까운 차량 2대씩의 도착 정보를 조회합니다. 앱이 사용하는 유일한 엔드포인트이며, 응답에서 요청한 노선(`routeId`)만 골라 씁니다.
 
 | 요청 변수 | 예시 | 설명 |
 | :--- | :--- | :--- |
 | `stationId` | `206000199` | 정류소 ID |
-| `routeId` | `204000022` | 노선 ID |
 | `format` | `json` | 응답 형식 |
 | `serviceKey` | | 인증키 |
 
-응답 본문은 `response.msgBody.busArrivalItem`이며, 타입은 `src/lib/types.ts`의 `GbisBusArrivalItem`입니다.
+응답 본문은 `response.msgBody.busArrivalList`이며, 항목 타입은 `src/lib/types.ts`의 `GbisBusArrivalItem`입니다. 결과가 하나면 배열이 아닌 객체로 옵니다.
 
 | 응답 항목 | 설명 |
 | :--- | :--- |
+| `routeId` | 노선 ID (숫자) |
 | `routeName` | 노선 번호 (문자열 또는 숫자로 내려옵니다) |
 | `routeDestName` | 노선 종점(방면) |
 | `predictTime1`, `predictTime2` | 도착 예정 시간 (분) |
 | `locationNo1`, `locationNo2` | 남은 정류장 수 |
-| `plateNo1`, `plateNo2` | 차량 번호 |
-| `stationNm1`, `stationNm2` | 차량의 현재 위치 정류장명 |
 
 - 도착 예정 차량이 없는 칸은 숫자 대신 빈 문자열(`""`)로 내려옵니다.
+- 지금 오는 차량이 없는 노선은 목록에서 빠질 수 있습니다. 앱은 이때 `routeName`·`routeDestName` 없이 빈 `arrivals`를 200으로 돌려줍니다. 그래서 잘못된 `routeId`도 오류가 아닌 "운행 정보 없음"으로 보입니다.
 - 출발 전 차량도 포함될 수 있습니다.
+- `plateNo1`·`stationNm1` 등 차량 정보 필드는 이름과 값이 맞지 않아(`plateNo1`에 `1`, `stationNm1`에 차량 번호가 옴, 2026-10 확인) 쓰지 않습니다.
+- 노선 하나만 조회하는 `getBusArrivalItemv2`도 있지만, 2026-10-23에 `resultCode: 1`(시스템 에러)만 돌려주는 장애가 있어 목록 조회로 바꿨습니다.
 
 ### 2.2. 결과 코드 `response.msgHeader.resultCode`
 
@@ -128,4 +125,4 @@ GET https://apis.data.go.kr/6410000/busstationservice/v2/getBusStationListv2
 
 ### 3.2. 노선 ID와 조합 확인
 
-노선 ID는 이 서비스로 찾지 않습니다 (경유 노선 조회는 확인하지 않았습니다). 정류소 정보 사이트 등에서 찾은 노선 ID가 맞는지는, 정류소 ID와 함께 `getBusArrivalItemv2`(§2.1)를 호출해 `resultCode`가 `0`인지로 확인합니다. 응답의 `routeName`과 `routeDestName`(방면)으로 노선과 방향도 함께 확인할 수 있습니다.
+노선 ID는 이 서비스로 찾지 않습니다 (경유 노선 조회는 확인하지 않았습니다). 정류소 정보 사이트 등에서 찾은 노선 ID가 맞는지는, 정류소 ID로 `getBusArrivalListv2`(§2.1)를 호출해 응답 목록에 그 `routeId`가 있는지로 확인합니다. 해당 항목의 `routeName`과 `routeDestName`(방면)으로 노선과 방향도 함께 확인할 수 있습니다. 지금 오는 차량이 없으면 목록에서 빠질 수 있으니 운행 시간에 확인합니다.

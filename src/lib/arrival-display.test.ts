@@ -12,8 +12,6 @@ import { BusArrival, RouteType } from "@/lib/types";
 const arrival = (predictTime: number): BusArrival => ({
   predictTime,
   locationNo: 3,
-  plateNo: "경기70바1234",
-  stationNm: "판교역",
 });
 
 describe("minutesLeft", () => {

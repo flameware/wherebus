@@ -5,6 +5,25 @@
  * `@import "tailwindcss"`를 대신하므로 따로 두지 않습니다(preflight가 두 번 들어갑니다). */
 @import "@flameware/ui/styles.css";
 
+/* 운행시간표 디자인 토큰(#25). 디자인 시스템 토큰과 겹치지 않도록 tt- 접두사를 붙입니다.
+ * 라이트 모드만 있습니다. 노선 색은 arrival-display의 ROUTE_COLORS가 정합니다. */
+@theme {
+  --color-tt-ground: #f2f2ef; /* 바탕(정류장 사이) */
+  --color-tt-panel: #ffffff; /* 판 */
+  --color-tt-ink: #121212; /* 글자, 제목 띠, 곧 도착 칸 */
+  --color-tt-sub: #5c5c58; /* 보조 글자 */
+  --color-tt-faint: #8f8f8a; /* 흐린 글자 */
+  --color-tt-rule: #dcdcd7; /* 가는 선 */
+  --color-tt-warn: #a85a00; /* 경고 */
+  --color-tt-fresh: #00a05a; /* 신선도 점(정상) */
+}
+
+/* 숫자·영문 글꼴. --font-num은 layout.tsx가 next/font로 로드하는 Manrope이고,
+ * Manrope에 없는 한글은 Pretendard로 넘어갑니다. 변수를 참조하므로 inline으로 둡니다. */
+@theme inline {
+  --font-tt-num: var(--font-num), "Pretendard Variable", Pretendard, sans-serif;
+}
+
 /* iOS Safari의 바운스·기본 당겨서 새로고침이 앱의 당겨서 새로고침과 겹치지 않게 합니다. */
 html {
   overscroll-behavior-y: contain;

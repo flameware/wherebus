@@ -10,11 +10,15 @@ export const FAR_MINUTES = 15;
 // 마지막 갱신 후 이 시간이 지나면 데이터가 오래됐다고 표시합니다 (자동 갱신 주기의 2배).
 export const STALE_SECONDS = 60;
 
-// 트랙에 그리는 최대 정거장 수. 이보다 멀리 있는 차량은 트랙 왼쪽 끝에 둡니다.
+// 정거장 칸의 칸 수. 이보다 멀리 있는 차량은 왼쪽 첫 칸에 둡니다.
 export const TRACK_STOPS = 10;
 
-// 트랙 위 두 차량이 이 정거장 수 이하로 붙어 있으면 라벨이 겹치므로 다음 차의 라벨을 숨깁니다.
-export const LABEL_GAP_STOPS = 2;
+/**
+ * 남은 정류장 수를 정거장 칸 인덱스(0~9)로 바꿉니다. 0번 칸이 10정거장 전(왼쪽 끝)이고,
+ * 9번 칸이 내 정류장 바로 앞입니다. 진입 중(0정거장)인 차도 9번 칸에 둡니다.
+ */
+export const trackCellIndex = (locationNo: number) =>
+  TRACK_STOPS - Math.min(Math.max(locationNo, 1), TRACK_STOPS);
 
 export const ROUTE_COLORS: Record<RouteType, string> = {
   직행좌석: "#E60012",
@@ -32,14 +36,29 @@ export const routeBadgeColors = (routeType: RouteType) => ({
 });
 
 /**
+ * 노선명을 번호와 괄호 속 보조 표기로 나눕니다. 예: "1007(예약)" → { number: "1007", suffix: "예약" }.
+ * 노선 칸에는 번호를 크게 쓰고 보조 표기는 그 아래에 작게 씁니다.
+ */
+export const splitRouteName = (
+  routeName: string,
+): { number: string; suffix?: string } => {
+  const match = /^(.*?)\((.+)\)$/.exec(routeName);
+  return match ? { number: match[1], suffix: match[2] } : { number: routeName };
+};
+
+/**
  * 받은 뒤 흐른 시간만큼 줄어든 남은 분. GBIS 값이 분 단위라서 초 단위로는 줄이지 않습니다.
+ * 화면 시각(now)은 1초마다 바뀌므로 받은 직후에는 receivedAt보다 앞설 수 있어, 흐른 시간은 0 아래로 두지 않습니다.
  */
 export const minutesLeft = (
   arrival: BusArrival,
   receivedAt: number,
   now: number,
 ) =>
-  Math.max(0, arrival.predictTime - Math.floor((now - receivedAt) / 60_000));
+  Math.max(
+    0,
+    arrival.predictTime - Math.floor(Math.max(0, now - receivedAt) / 60_000),
+  );
 
 /** 도착 예정 차량의 순번. 즐겨찾기마다 가까운 순으로 최대 두 대입니다. */
 export type ArrivalOrder = "first" | "second";

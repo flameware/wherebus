@@ -6,6 +6,8 @@ import {
   formatAgo,
   formatMinutes,
   minutesLeft,
+  splitRouteName,
+  trackCellIndex,
 } from "@/lib/arrival-display";
 import { BusArrival, RouteType } from "@/lib/types";
 
@@ -24,6 +26,10 @@ describe("minutesLeft", () => {
     [3 * 60_000 + 30_000, 4],
   ])("받은 뒤 %ims 지나면 7분 → %i분", (elapsed, expected) => {
     expect(minutesLeft(arrival(7), receivedAt, receivedAt + elapsed)).toBe(expected);
+  });
+
+  it("화면 시각이 받은 시각보다 조금 앞서도 늘어나지 않는다", () => {
+    expect(minutesLeft(arrival(7), receivedAt, receivedAt - 500)).toBe(7);
   });
 
   it("0분 아래로 내려가지 않는다", () => {
@@ -88,5 +94,30 @@ describe("routeBadgeColors", () => {
 
   it("마을 배지는 검정 글자", () => {
     expect(routeBadgeColors("마을").foreground).toBe("#000000");
+  });
+});
+
+describe("trackCellIndex", () => {
+  // 칸 0이 10정거장 전(왼쪽 끝), 칸 9가 내 정류장 바로 앞입니다.
+  it.each([
+    [0, 9],
+    [1, 9],
+    [2, 8],
+    [9, 1],
+    [10, 0],
+    [11, 0],
+    [25, 0],
+  ])("%i정거장 전 → %i번 칸", (locationNo, expected) => {
+    expect(trackCellIndex(locationNo)).toBe(expected);
+  });
+});
+
+describe("splitRouteName", () => {
+  it("괄호 안을 번호 아래에 쓸 보조 표기로 나눈다", () => {
+    expect(splitRouteName("1007(예약)")).toEqual({ number: "1007", suffix: "예약" });
+  });
+
+  it("괄호가 없으면 번호만 있다", () => {
+    expect(splitRouteName("4000")).toEqual({ number: "4000" });
   });
 });

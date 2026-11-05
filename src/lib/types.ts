@@ -46,6 +46,7 @@ export interface RouteArrival {
   routeName?: string;
   routeDestName?: string;
   arrivals: BusArrival[];
+  fetchedAt: number; // GBIS가 이 값을 조회한 시각(ms). 서버 캐시를 거치면 요청 시각보다 이릅니다.
 }
 
 /**
@@ -71,7 +72,7 @@ export interface FavoriteRoute {
 }
 
 /**
- * 즐겨찾기 노선 하나의 조회 결과. receivedAt은 값을 받은 시각(ms)입니다.
+ * 즐겨찾기 노선 하나의 조회 결과. receivedAt은 GBIS가 값을 조회한 시각(ms)입니다.
  * 조회에 실패하면 마지막으로 받은 값(last)을 함께 들고 있어, 흐리게라도 보여줄 수 있습니다.
  */
 export type ArrivalResult =

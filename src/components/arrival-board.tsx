@@ -85,14 +85,22 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
       ),
     );
 
+    // 값마다 GBIS가 조회한 시각을 씁니다. 서버 캐시를 거친 값은 받은 시각보다 이르고,
+    // 기기 시계가 서버보다 늦으면 미래가 될 수 있어 받은 시각을 넘지 않게 둡니다.
+    const respondedAt = Date.now();
+    const queriedAt = (data: RouteArrival) =>
+      Math.min(data.fetchedAt, respondedAt);
     // 조회에 실패한 노선은 마지막으로 받은 값을 함께 들고 있습니다.
-    const receivedAt = Date.now();
     setArrivalResults((prev) => {
       const next: ArrivalResults = {};
       for (const [key, data] of Object.entries(fetched)) {
         const before = prev[key];
         next[key] = data
-          ? { status: "ok", data, receivedAt }
+          ? {
+              status: "ok",
+              data,
+              receivedAt: queriedAt(data),
+            }
           : {
               status: "error",
               last:
@@ -103,7 +111,11 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
       }
       return next;
     });
-    setLastUpdated(receivedAt);
+    const okTimes = Object.values(fetched)
+      .filter((data): data is RouteArrival => data !== null)
+      .map(queriedAt);
+    // 헤더의 "N초 전 갱신"은 받은 값 중 가장 오래된 조회 시각을 따릅니다.
+    setLastUpdated(okTimes.length > 0 ? Math.min(...okTimes) : respondedAt);
     setIsRefreshing(false);
   }, [stops]);
 

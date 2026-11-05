@@ -11,6 +11,28 @@ const API_BASE_URL = "https://apis.data.go.kr/6410000/busarrivalservice/v2";
 // GBIS 응답 캐시 시간 (초)
 const CACHE_SECONDS = 20;
 
+// 캐시에서 받은 응답이 이보다 오래됐으면 GBIS를 바로 다시 부릅니다 (밀리초).
+// Next.js의 데이터 캐시는 기한이 지난 값을 일단 돌려주고 뒤에서 새로 받아 둡니다. 한동안 아무도
+// 열지 않다가 들어오면 첫 응답이 몇 분, 몇 시간 전 값이 되므로, 그때만 한 번 더 부릅니다.
+const MAX_CACHED_AGE_MS = (CACHE_SECONDS + 10) * 1000;
+
+/**
+ * GBIS 응답의 queryTime(한국 시각, 예: "2026-11-05 17:13:58.145")을 ms로 바꿉니다. 읽지 못하면 NaN입니다.
+ */
+const parseQueryTime = (queryTime: string) =>
+  Date.parse(`${queryTime.replace(" ", "T")}+09:00`);
+
+const fetchGbis = async (
+  url: string,
+  init: RequestInit,
+): Promise<GbisResponse<GbisBusArrivalItem>> => {
+  const apiRes = await fetch(url, init);
+  if (!apiRes.ok) {
+    throw new Error(`API call failed with status: ${apiRes.status}`);
+  }
+  return apiRes.json();
+};
+
 /**
  * TAGO 형식의 ID(예: GGB206000637)를 GBIS ID(206000637)로 변환합니다.
  */
@@ -69,15 +91,16 @@ export async function GET(req: NextRequest) {
   try {
     // GBIS 일일 호출 한도(10,000건)를 지키기 위해 접속자 수와 관계없이
     // 정류장별로 20초에 최대 1번만 호출합니다. 같은 정류장의 노선들은 캐시를 함께 씁니다.
-    const apiRes = await fetch(serviceUrl, {
+    let jsonData = await fetchGbis(serviceUrl, {
       next: { revalidate: CACHE_SECONDS },
     });
-
-    if (!apiRes.ok) {
-      throw new Error(`API call failed with status: ${apiRes.status}`);
+    let queriedAt = parseQueryTime(jsonData.response.msgHeader.queryTime);
+    if (Date.now() - queriedAt > MAX_CACHED_AGE_MS) {
+      jsonData = await fetchGbis(serviceUrl, { cache: "no-store" });
+      queriedAt = parseQueryTime(jsonData.response.msgHeader.queryTime);
     }
+    const fetchedAt = Number.isNaN(queriedAt) ? Date.now() : queriedAt;
 
-    const jsonData: GbisResponse<GbisBusArrivalItem> = await apiRes.json();
     const { resultCode, resultMessage } = jsonData.response.msgHeader;
 
     // 4: 결과 없음 (정류소에 해당 노선이 없거나 운행 정보가 없음)
@@ -98,7 +121,7 @@ export async function GET(req: NextRequest) {
 
     // 지금 정류소에 오는 차량이 없는 노선은 목록에서 빠지므로 도착 예정 버스가 없는 상태로 돌려줍니다.
     if (!item) {
-      return NextResponse.json({ arrivals: [] } satisfies RouteArrival);
+      return NextResponse.json({ arrivals: [], fetchedAt } satisfies RouteArrival);
     }
 
     const routeArrival: RouteArrival = {
@@ -107,6 +130,7 @@ export async function GET(req: NextRequest) {
       arrivals: [toBusArrival(item, 1), toBusArrival(item, 2)].filter(
         (arrival): arrival is BusArrival => arrival !== null,
       ),
+      fetchedAt,
     };
 
     return NextResponse.json(routeArrival);

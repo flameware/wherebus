@@ -2,10 +2,12 @@
 
 import { PullIndicator } from "@/components/pull-indicator";
 import { ROUTE_GRID } from "@/components/route-row";
-import { StopSection, getFavoriteKey } from "@/components/stop-section";
+import { StopSection } from "@/components/stop-section";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
-import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
+import { getFavoriteKey } from "@/lib/favorite-key";
+import { padTwo } from "@/lib/pad";
+import { ArrivalResults, FavoriteStop, RouteArrival } from "@/lib/types";
 import { singleFlight } from "@/lib/single-flight";
 import { orderStops } from "@/lib/stop-order";
 import { cn } from "@/lib/cn";
@@ -14,10 +16,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 // 자동 갱신 주기 (밀리초)
 const REFRESH_INTERVAL_MS = 30_000;
 
-const pad = (n: number) => String(n).padStart(2, "0");
 const formatClock = (ms: number) => {
   const date = new Date(ms);
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${padTwo(date.getHours())}:${padTwo(date.getMinutes())}`;
 };
 
 // 남은 분과 "N초 전" 표시를 갱신하기 위해 1초마다 현재 시각을 바꿉니다.
@@ -35,12 +36,10 @@ function useNow() {
  * 다른 프로필의 정류장이 브라우저로 내려가지 않도록, 정류장은 서버 쪽 페이지가 골라서 넘겨줍니다.
  */
 export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
-  const [arrivalResults, setArrivalResults] = useState<{
-    [key: string]: ArrivalResult;
-  }>({});
+  const [arrivalResults, setArrivalResults] = useState<ArrivalResults>({});
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  // 정류장 순서를 정한 시각. 보는 도중에 카드가 움직이지 않도록 화면이 보이기 시작할 때만 바꿉니다.
+  // 정류장 순서를 정한 시각. 보는 도중에 정류장 섹션이 움직이지 않도록 화면이 보이기 시작할 때만 바꿉니다.
   const [orderedAt, setOrderedAt] = useState<number | null>(null);
   const now = useNow();
 
@@ -89,7 +88,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
     // 조회에 실패한 노선은 마지막으로 받은 값을 함께 들고 있습니다.
     const receivedAt = Date.now();
     setArrivalResults((prev) => {
-      const next: { [key: string]: ArrivalResult } = {};
+      const next: ArrivalResults = {};
       for (const [key, data] of Object.entries(fetched)) {
         const before = prev[key];
         next[key] = data

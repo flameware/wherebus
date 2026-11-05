@@ -1,20 +1,17 @@
 import { RouteRow } from "@/components/route-row";
 import { isInPriorityHours } from "@/lib/stop-order";
-import { ArrivalResult, FavoriteStop } from "@/lib/types";
+import { getFavoriteKey } from "@/lib/favorite-key";
+import { padTwo } from "@/lib/pad";
+import { ArrivalResults, FavoriteStop } from "@/lib/types";
 import { cn } from "@/lib/cn";
-
-const pad = (hour: number) => String(hour).padStart(2, "0");
 
 interface StopSectionProps {
   stop: FavoriteStop;
-  results: { [key: string]: ArrivalResult };
+  results: ArrivalResults;
   now: number;
   // 하이드레이션 전에는 서버와 시각이 달라서 우선 시간대 반전을 그리지 않습니다.
   clockReady: boolean;
 }
-
-export const getFavoriteKey = (nodeId: string, routeId: string) =>
-  `${nodeId}-${routeId}`;
 
 /**
  * 정류장 하나의 시간표 섹션. 머리에 별칭, 정식 정류장명, 우선 시간대를 쓰고 노선 행을 잇습니다.
@@ -38,7 +35,7 @@ export function StopSection({ stop, results, now, clockReady }: StopSectionProps
               isPriorityNow ? "bg-tt-ink text-white" : "text-tt-faint",
             )}
           >
-            {pad(stop.priorityHours[0])}–{pad(stop.priorityHours[1])}시
+            {padTwo(stop.priorityHours[0])}–{padTwo(stop.priorityHours[1])}시
           </span>
         )}
       </header>

@@ -16,16 +16,15 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "버스어딨니",
-    // 상태 표시줄을 투명하게 두고 화면을 그 아래까지 깝니다. 그 자리는 arrival-board의 위쪽 띠가
-    // 헤더와 같은 검은색으로 칠하고, 글자는 흰색으로 나옵니다.
-    statusBarStyle: "black-translucent",
+    // black-translucent + viewport-fit=cover로 헤더를 상태 표시줄까지 늘리는 방식은 iOS 26.1에서 막혔습니다.
+    // 홈 화면 앱이 그 자리를 그리지 않고 밝은 블러로 덮어, 검은 헤더 위에 회색 그라데이션이 생깁니다.
+    // https://bugs.webkit.org/show_bug.cgi?id=301994 가 고쳐지면 다시 시도해 볼 수 있습니다.
+    statusBarStyle: "default",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: APP_THEME_COLOR,
-  // 안전 영역(상태 표시줄 자리)까지 화면을 넓힙니다. 여백은 env(safe-area-inset-top)으로 채웁니다.
-  viewportFit: "cover",
 };
 
 export default function RootLayout({

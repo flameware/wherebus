@@ -8,7 +8,7 @@ import {
   trackCellIndex,
 } from "@/lib/arrival-display";
 import { ArrivalResult, BusArrival, FavoriteRoute } from "@/lib/types";
-import { cn } from "@flameware/ui";
+import { cn } from "@/lib/cn";
 
 interface RouteRowProps {
   route: FavoriteRoute;

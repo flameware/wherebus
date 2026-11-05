@@ -8,7 +8,7 @@ import { STALE_SECONDS, formatAgo } from "@/lib/arrival-display";
 import { ArrivalResult, FavoriteStop, RouteArrival } from "@/lib/types";
 import { singleFlight } from "@/lib/single-flight";
 import { orderStops } from "@/lib/stop-order";
-import { cn } from "@flameware/ui";
+import { cn } from "@/lib/cn";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 // 자동 갱신 주기 (밀리초)

@@ -1,7 +1,7 @@
 import { RouteRow } from "@/components/route-row";
 import { isInPriorityHours } from "@/lib/stop-order";
 import { ArrivalResult, FavoriteStop } from "@/lib/types";
-import { cn } from "@flameware/ui";
+import { cn } from "@/lib/cn";
 
 const pad = (hour: number) => String(hour).padStart(2, "0");
 

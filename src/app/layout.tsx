@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={manrope.variable}>
-      {/* 한글 글꼴은 globals.css가 로드하는 Pretendard이고, --font-sans는 디자인 시스템 정의를 따릅니다. */}
+      {/* 바탕·글자색·한글 글꼴은 globals.css의 앱 토큰(tt-, --font-sans)입니다. */}
       <body className="bg-tt-ground font-sans text-tt-ink antialiased">
         {children}
       </body>

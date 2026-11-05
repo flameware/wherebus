@@ -1,4 +1,3 @@
-import { palette } from "@flameware/tokens";
 import { BusArrival, RouteType } from "@/lib/types";
 
 // 이 분 이하로 남으면 "곧 도착"으로 강조합니다.
@@ -27,12 +26,16 @@ export const ROUTE_COLORS: Record<RouteType, string> = {
   마을: "#F2A900",
 };
 
+// 노선 번호 글자색. 노선 색 위에 쓰므로 앱 토큰(tt-ink)이 아니라 순수 검정·흰색입니다.
+const BADGE_BLACK = "#000000";
+const BADGE_WHITE = "#ffffff";
+
 /**
  * 노선 번호 배지의 배경/글자 색. 배경은 노선 색 그대로이고, 밝은 마을 노란색 위에만 검정 글자를 씁니다.
  */
 export const routeBadgeColors = (routeType: RouteType) => ({
   background: ROUTE_COLORS[routeType],
-  foreground: routeType === "마을" ? palette["base.black"] : palette["base.white"],
+  foreground: routeType === "마을" ? BADGE_BLACK : BADGE_WHITE,
 });
 
 /**

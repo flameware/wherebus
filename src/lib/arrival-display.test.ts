@@ -1,4 +1,4 @@
-import { contrastRatio } from "@flameware/tokens/ramp";
+import { contrastRatio } from "@/lib/contrast";
 import { describe, expect, it } from "vitest";
 import {
   arrivalEmphasis,

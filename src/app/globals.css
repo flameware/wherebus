@@ -1,13 +1,22 @@
-/* 한글 글꼴. 디자인 시스템은 --font-sans에 Pretendard를 적어 두지만 파일은 주지 않으므로
- * 앱이 직접 로드합니다(investmentdiary와 같은 방식). @import는 다른 규칙보다 앞에 와야 합니다. */
+/* 한글 글꼴 Pretendard는 jsDelivr CSS로 로드합니다. @import는 다른 규칙보다 앞에 와야 합니다. */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
-/* tailwind, 토큰, @source를 모두 끌고 오는 디자인 시스템 진입점입니다(ADR-0001).
- * `@import "tailwindcss"`를 대신하므로 따로 두지 않습니다(preflight가 두 번 들어갑니다). */
-@import "@flameware/ui/styles.css";
+@import "tailwindcss";
 
-/* 운행시간표 디자인 토큰(#25). 디자인 시스템 토큰과 겹치지 않도록 tt- 접두사를 붙입니다.
+/* 운행시간표 디자인 토큰(ADR-0002, DESIGN.md). 앱 토큰은 tt- 접두사를 붙입니다.
  * 라이트 모드만 있습니다. 노선 색은 arrival-display의 ROUTE_COLORS가 정합니다. */
 @theme {
+  /* 한글 글꼴. body가 font-sans로 씁니다. */
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+
+  /* 화면이 쓰는 글자 크기 단계의 행간·자간. 한글은 Tailwind 기본보다 행간을 넉넉히 둡니다. */
+  --text-xs--line-height: 1.6;
+  --text-xl--line-height: 1.4;
+  --text-xl--letter-spacing: -0.01em;
+  --text-2xl--line-height: 1.4;
+  --text-2xl--letter-spacing: -0.01em;
+
   --color-tt-ground: #f2f2ef; /* 바탕(정류장 사이) */
   --color-tt-panel: #ffffff; /* 판 */
   --color-tt-ink: #121212; /* 글자, 제목 띠, 곧 도착 칸 */

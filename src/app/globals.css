@@ -38,6 +38,20 @@ html {
   overscroll-behavior-y: contain;
 }
 
+/* iOS 26.1부터 홈 화면 웹앱은 viewport-fit=cover여도 상태 표시줄 밑에 화면을 그리지 않고,
+ * 그 자리를 시스템이 덮습니다. 덮개는 페이지의 색 체계와 캔버스(html) 배경을 따르므로, 밝은 바탕이면
+ * 검은 헤더 위에 회색 그라데이션이 생깁니다. 홈 화면 앱에서만 둘 다 헤더 색으로 맞춥니다.
+ * 바탕색은 body가 화면 높이만큼 칠합니다. https://bugs.webkit.org/show_bug.cgi?id=301994 */
+@media (display-mode: standalone) {
+  html {
+    color-scheme: dark;
+    background-color: var(--color-tt-ink);
+  }
+  body {
+    min-height: 100dvh;
+  }
+}
+
 /* 당겨서 새로고침 스피너: iOS 활동 표시기처럼 스포크 단위로 끊어서 돕니다. */
 @keyframes pull-spinner-rotate {
   to {

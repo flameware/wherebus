@@ -16,12 +16,16 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "버스어딨니",
-    statusBarStyle: "default",
+    // 상태 표시줄을 투명하게 두고 화면을 그 아래까지 깝니다. 그 자리는 arrival-board의 위쪽 띠가
+    // 헤더와 같은 검은색으로 칠하고, 글자는 흰색으로 나옵니다.
+    statusBarStyle: "black-translucent",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: APP_THEME_COLOR,
+  // 안전 영역(상태 표시줄 자리)까지 화면을 넓힙니다. 여백은 env(safe-area-inset-top)으로 채웁니다.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

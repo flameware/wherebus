@@ -18,7 +18,7 @@ export function PullIndicator({ pull, refreshing }: PullIndicatorProps) {
 
   return (
     <div
-      className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center"
+      className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top)] z-40 flex justify-center"
       style={{
         // 내려온 화면 위 빈 공간의 가운데에 둡니다.
         transform: `translateY(${pull / 2 - 14}px)`,

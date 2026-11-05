@@ -155,8 +155,13 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
   return (
     <>
       {/* iOS 26부터 홈 화면 웹앱은 화면 위쪽에 블러를 깔아 헤더가 흐려집니다. 배경색이 있는 sticky 띠가
-          위쪽 가장자리를 덮고 있으면 WebKit이 블러 대신 그 색을 씁니다. 화면 배경과 같은 색이라 보이지 않습니다. */}
-      <div aria-hidden className="sticky top-0 z-30 h-4 bg-tt-ground" />
+          위쪽 가장자리를 덮고 있으면 WebKit이 블러 대신 그 색을 씁니다.
+          브라우저에서는 화면 배경과 같은 색이라 보이지 않습니다. 홈 화면 웹앱에서는 투명한 상태 표시줄
+          (layout.tsx의 black-translucent) 자리를 헤더와 같은 검은색으로 채워, 헤더가 화면 맨 위까지 이어집니다. */}
+      <div
+        aria-hidden
+        className="sticky top-0 z-30 h-4 bg-tt-ground [@media(display-mode:standalone)]:h-[env(safe-area-inset-top)] [@media(display-mode:standalone)]:bg-tt-ink"
+      />
       <PullIndicator pull={pull} refreshing={refreshing} />
 
       <div

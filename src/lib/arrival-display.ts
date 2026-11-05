@@ -27,15 +27,15 @@ export const ROUTE_COLORS: Record<RouteType, string> = {
 };
 
 // 노선 번호 글자색. 노선 색 위에 쓰므로 앱 토큰(tt-ink)이 아니라 순수 검정·흰색입니다.
-const BADGE_BLACK = "#000000";
-const BADGE_WHITE = "#ffffff";
+const NUMBER_BLACK = "#000000";
+const NUMBER_WHITE = "#ffffff";
 
 /**
- * 노선 번호 배지의 배경/글자 색. 배경은 노선 색 그대로이고, 밝은 마을 노란색 위에만 검정 글자를 씁니다.
+ * 노선 칸의 배경/글자 색. 배경은 노선 색 그대로이고, 밝은 마을 노란색 위에만 검정 글자를 씁니다.
  */
-export const routeBadgeColors = (routeType: RouteType) => ({
+export const routeCellColors = (routeType: RouteType) => ({
   background: ROUTE_COLORS[routeType],
-  foreground: routeType === "마을" ? BADGE_BLACK : BADGE_WHITE,
+  foreground: routeType === "마을" ? NUMBER_BLACK : NUMBER_WHITE,
 });
 
 /**
@@ -63,26 +63,25 @@ export const minutesLeft = (
     arrival.predictTime - Math.floor(Math.max(0, now - receivedAt) / 60_000),
   );
 
-/** 도착 예정 차량의 순번. 즐겨찾기마다 가까운 순으로 최대 두 대입니다. */
-export type ArrivalOrder = "first" | "second";
-
 /**
- * 트랙에서 차량을 얼마나 강조할지. 곧 도착한 첫 차만 강조하고, 먼 첫 차와 두 번째 차는 흐리게 둡니다.
+ * 이번 차를 얼마나 강조할지. 곧 도착이면 검정 칸으로 강조하고, 15분 이상 남았으면 흐리게 둡니다.
  */
-export type ArrivalEmphasis = "imminent" | "normal" | "far" | "secondary";
+export type ArrivalEmphasis = "imminent" | "normal" | "far";
 
-export const arrivalEmphasis = (
-  minutes: number,
-  order: ArrivalOrder,
-): ArrivalEmphasis => {
-  if (order === "second") return "secondary";
+export const arrivalEmphasis = (minutes: number): ArrivalEmphasis => {
   if (minutes <= IMMINENT_MINUTES) return "imminent";
   if (minutes >= FAR_MINUTES) return "far";
   return "normal";
 };
 
-export const formatMinutes = (minutes: number) =>
-  minutes <= IMMINENT_MINUTES ? "곧 도착" : `${minutes}분`;
+/**
+ * 남은 정류장 수 표시. 0이면 내 정류장에 들어오는 중이라 "진입 중"입니다.
+ * 좁은 다음 차 칸은 "전"을 뺀 짧은 꼴(short)을 씁니다.
+ */
+export const stopsAwayLabel = (locationNo: number, form: "full" | "short") => {
+  if (locationNo === 0) return "진입 중";
+  return form === "full" ? `${locationNo}정거장 전` : `${locationNo}정거장`;
+};
 
 export const formatAgo = (ms: number) => {
   const seconds = Math.max(0, Math.floor(ms / 1000));

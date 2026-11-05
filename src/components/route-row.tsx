@@ -3,8 +3,9 @@ import {
   arrivalEmphasis,
   formatAgo,
   minutesLeft,
-  routeBadgeColors,
+  routeCellColors,
   splitRouteName,
+  stopsAwayLabel,
   trackCellIndex,
 } from "@/lib/arrival-display";
 import { ArrivalResult, BusArrival, FavoriteRoute } from "@/lib/types";
@@ -23,9 +24,6 @@ export const ROUTE_GRID = "grid grid-cols-[76px_1fr_84px]";
 const SECOND_ALPHA = "73";
 const BETWEEN_ALPHA = "38";
 
-const stopsLabel = (locationNo: number) =>
-  locationNo === 0 ? "진입 중" : `${locationNo}정거장 전`;
-
 /**
  * 시간표 한 행: 노선 칸, 이번 차(남은 분과 정거장 칸), 다음 차.
  * 스크린 리더는 노선 번호, 남은 분, 남은 정류장, 다음 차 순으로 읽습니다.
@@ -36,10 +34,11 @@ export function RouteRow({ route, result, now }: RouteRowProps) {
   const isStale = result?.status === "error" && shown !== undefined;
   const arrivals = shown?.data.arrivals ?? [];
   const [first, next] = arrivals;
+  const colors = routeCellColors(route.routeType);
 
   return (
     <div className={cn(ROUTE_GRID, "min-h-21")}>
-      <RouteCell route={route} />
+      <RouteCell routeName={route.routeName} colors={colors} />
 
       {!result ? (
         <>
@@ -64,15 +63,20 @@ export function RouteRow({ route, result, now }: RouteRowProps) {
       ) : (
         <>
           <CurrentCell
-            route={route}
+            routeColor={colors.background}
             first={first}
             next={next}
             minutes={minutesLeft(first, shown.receivedAt, now)}
-            stale={isStale ? formatAgo(now - shown.receivedAt) : undefined}
+            stale={isStale}
+            receivedAgo={formatAgo(now - shown.receivedAt)}
           />
           <NextCell
-            next={next}
-            minutes={next && minutesLeft(next, shown.receivedAt, now)}
+            next={
+              next && {
+                minutes: minutesLeft(next, shown.receivedAt, now),
+                locationNo: next.locationNo,
+              }
+            }
             stale={isStale}
           />
         </>
@@ -81,13 +85,18 @@ export function RouteRow({ route, result, now }: RouteRowProps) {
   );
 }
 
-function RouteCell({ route }: { route: FavoriteRoute }) {
-  const badge = routeBadgeColors(route.routeType);
-  const { number, suffix } = splitRouteName(route.routeName);
+function RouteCell({
+  routeName,
+  colors,
+}: {
+  routeName: string;
+  colors: ReturnType<typeof routeCellColors>;
+}) {
+  const { number, suffix } = splitRouteName(routeName);
   return (
     <div
       className="flex flex-col items-center justify-center px-1 text-center"
-      style={{ backgroundColor: badge.background, color: badge.foreground }}
+      style={{ backgroundColor: colors.background, color: colors.foreground }}
     >
       <span className="font-tt-num text-[21px] leading-none font-extrabold tabular-nums">
         {number}
@@ -98,21 +107,28 @@ function RouteCell({ route }: { route: FavoriteRoute }) {
 }
 
 interface CurrentCellProps {
-  route: FavoriteRoute;
+  routeColor: string;
   first: BusArrival;
   next: BusArrival | undefined;
   minutes: number;
-  stale: string | undefined; // 지난 정보이면 "N분 전" 같은 받은 시각
+  stale: boolean; // 지난 정보인지
+  receivedAgo: string; // 값을 받은 시각("N분 전"). 지난 정보일 때만 보여줍니다.
 }
 
-function CurrentCell({ route, first, next, minutes, stale }: CurrentCellProps) {
-  const emphasis = arrivalEmphasis(minutes, "first");
+function CurrentCell({ routeColor, first, next, minutes, stale, receivedAgo }: CurrentCellProps) {
+  const emphasis = arrivalEmphasis(minutes);
   return (
     <div className="flex min-w-0 flex-col justify-center gap-2 px-3 py-2.5">
       {emphasis === "imminent" ? (
-        <div className="flex items-baseline gap-2 self-start bg-tt-ink px-2.5 py-1 text-white">
+        // 지난 정보이면 검정 대신 흐린 칸으로 그려, 지금 나가라는 신호로 읽히지 않게 합니다.
+        <div
+          className={cn(
+            "flex items-baseline gap-2 self-start px-2.5 py-1 text-white",
+            stale ? "bg-tt-faint" : "bg-tt-ink",
+          )}
+        >
           <span className="text-2xl leading-tight font-extrabold">곧 도착</span>
-          <span className="text-xs">{stopsLabel(first.locationNo)}</span>
+          <span className="text-xs">{stopsAwayLabel(first.locationNo, "full")}</span>
         </div>
       ) : (
         <div className="flex items-baseline gap-2">
@@ -125,13 +141,15 @@ function CurrentCell({ route, first, next, minutes, stale }: CurrentCellProps) {
             <span className="font-tt-num text-[44px] leading-none tabular-nums">{minutes}</span>
             <span className="text-[15px]">분</span>
           </span>
-          <span className="truncate text-[13px] text-tt-sub">{stopsLabel(first.locationNo)}</span>
+          <span className="truncate text-[13px] text-tt-sub">
+            {stopsAwayLabel(first.locationNo, "full")}
+          </span>
         </div>
       )}
-      <StopCells route={route} first={first} next={next} dimmed={stale !== undefined} />
+      <StopCells color={routeColor} first={first} next={next} dimmed={stale} />
       {stale && (
         <span className="self-start border border-tt-warn px-1.5 py-px text-[11px] font-bold text-tt-warn">
-          {stale} 정보
+          {receivedAgo} 정보
         </span>
       )}
     </div>
@@ -143,17 +161,16 @@ function CurrentCell({ route, first, next, minutes, stale }: CurrentCellProps) {
  * 두 차가 같은 칸이면 첫 차 표시가 이깁니다.
  */
 function StopCells({
-  route,
+  color,
   first,
   next,
   dimmed,
 }: {
-  route: FavoriteRoute;
+  color: string; // 노선 색
   first: BusArrival;
   next: BusArrival | undefined;
   dimmed: boolean;
 }) {
-  const color = routeBadgeColors(route.routeType).background;
   const firstCell = trackCellIndex(first.locationNo);
   const nextCell = next && trackCellIndex(next.locationNo);
   const cellColor = (i: number) => {
@@ -179,25 +196,25 @@ function StopCells({
 
 function NextCell({
   next,
-  minutes,
   stale,
 }: {
-  next: BusArrival | undefined;
-  minutes: number | undefined;
+  next: { minutes: number; locationNo: number } | undefined;
   stale: boolean;
 }) {
   return (
     <div className="flex flex-col items-end justify-center border-l border-tt-rule px-3 text-right">
       <span className="sr-only">다음 차</span>
-      {next && minutes !== undefined ? (
+      {next ? (
         <>
           <span
             className={cn("flex items-baseline font-bold", stale ? "text-tt-faint" : "text-tt-sub")}
           >
-            <span className="font-tt-num text-2xl leading-none tabular-nums">{minutes}</span>
+            <span className="font-tt-num text-2xl leading-none tabular-nums">{next.minutes}</span>
             <span className="text-xs">분</span>
           </span>
-          <span className="mt-1 text-[11px] text-tt-sub">{next.locationNo}정거장</span>
+          <span className="mt-1 text-[11px] text-tt-sub">
+            {stopsAwayLabel(next.locationNo, "short")}
+          </span>
         </>
       ) : (
         <span className="font-tt-num text-2xl font-bold text-tt-rule">

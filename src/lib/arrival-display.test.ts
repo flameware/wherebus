@@ -2,11 +2,11 @@ import { contrastRatio } from "@/lib/contrast";
 import { describe, expect, it } from "vitest";
 import {
   arrivalEmphasis,
-  routeBadgeColors,
+  routeCellColors,
   formatAgo,
-  formatMinutes,
   minutesLeft,
   splitRouteName,
+  stopsAwayLabel,
   trackCellIndex,
 } from "@/lib/arrival-display";
 import { BusArrival, RouteType } from "@/lib/types";
@@ -37,17 +37,6 @@ describe("minutesLeft", () => {
   });
 });
 
-describe("formatMinutes", () => {
-  it.each([
-    [0, "곧 도착"],
-    [2, "곧 도착"],
-    [3, "3분"],
-    [15, "15분"],
-  ])("%i분 → %s", (minutes, expected) => {
-    expect(formatMinutes(minutes)).toBe(expected);
-  });
-});
-
 describe("formatAgo", () => {
   it.each([
     [-500, "0초 전"],
@@ -69,15 +58,11 @@ describe("arrivalEmphasis", () => {
     [15, "far"],
     [40, "far"],
   ] as const)("첫 차 %i분 → %s", (minutes, expected) => {
-    expect(arrivalEmphasis(minutes, "first")).toBe(expected);
-  });
-
-  it.each([0, 2, 3, 14, 15, 40])("두 번째 차는 %i분이어도 secondary", (minutes) => {
-    expect(arrivalEmphasis(minutes, "second")).toBe("secondary");
+    expect(arrivalEmphasis(minutes)).toBe(expected);
   });
 });
 
-describe("routeBadgeColors", () => {
+describe("routeCellColors", () => {
   // 노선 번호는 굵은 큰 글씨라서 WCAG 큰 텍스트 기준 3:1을 요구합니다.
   const MIN_CONTRAST = 3;
 
@@ -86,14 +71,14 @@ describe("routeBadgeColors", () => {
     ["좌석", "#0068B7"],
     ["일반", "#00A05A"],
     ["마을", "#F2A900"],
-  ] as [RouteType, string][])("%s 배지는 노선 색 %s 위에서 글자가 읽힌다", (routeType, routeColor) => {
-    const { background, foreground } = routeBadgeColors(routeType);
+  ] as [RouteType, string][])("%s 노선 칸은 노선 색 %s 위에서 글자가 읽힌다", (routeType, routeColor) => {
+    const { background, foreground } = routeCellColors(routeType);
     expect(background).toBe(routeColor);
     expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(MIN_CONTRAST);
   });
 
-  it("마을 배지는 검정 글자", () => {
-    expect(routeBadgeColors("마을").foreground).toBe("#000000");
+  it("마을 노선 칸은 검정 글자", () => {
+    expect(routeCellColors("마을").foreground).toBe("#000000");
   });
 });
 
@@ -109,6 +94,19 @@ describe("trackCellIndex", () => {
     [25, 0],
   ])("%i정거장 전 → %i번 칸", (locationNo, expected) => {
     expect(trackCellIndex(locationNo)).toBe(expected);
+  });
+});
+
+describe("stopsAwayLabel", () => {
+  it.each([
+    [0, "full", "진입 중"],
+    [0, "short", "진입 중"],
+    [1, "full", "1정거장 전"],
+    [1, "short", "1정거장"],
+    [12, "full", "12정거장 전"],
+    [12, "short", "12정거장"],
+  ] as const)("%i정거장 남음(%s) → %s", (locationNo, form, expected) => {
+    expect(stopsAwayLabel(locationNo, form)).toBe(expected);
   });
 });
 

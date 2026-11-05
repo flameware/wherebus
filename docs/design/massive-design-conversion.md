@@ -1,5 +1,7 @@
 # massive-design 전환 분석
 
+> 지난 기록입니다. [ADR-0002](../adr/0002-timetable-tokens.md)로 massive-design을 걷어냈고, 지금 화면은 [`DESIGN.md`](../../DESIGN.md)를 따릅니다.
+
 2026-10-21. 지금 화면 UI를 [massive-design](../../../massive-design/)(`@flameware/ui`·`@flameware/tokens` 0.9.0)으로 모두 옮길 수 있는지, 빈 부분이 무엇인지 정리한 문서입니다. 결정 근거는 [ADR-0001](../adr/0001-massive-design-adoption.md), 용어는 [`GLOSSARY.md`](../../GLOSSARY.md)를 따릅니다.
 
 **결론**: 차단 요소 없이 전부 전환할 수 있습니다. 범용 요소는 디자인 시스템으로 대체하고, 노선 색과 도착 트랙 같은 도메인 요소는 앱에 남깁니다.

@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { APP_THEME_COLOR } from "@/lib/app-icon";
+
+// 숫자·영문 글꼴. globals.css의 --font-tt-num 스택이 이 변수를 씁니다.
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-num",
+});
 
 export const metadata: Metadata = {
   title: "버스어딨니",
@@ -23,9 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
-      {/* 글꼴은 globals.css가 로드하는 Pretendard이고, --font-sans는 디자인 시스템 정의를 따릅니다. */}
-      <body className="font-sans antialiased">
+    <html lang="ko" className={manrope.variable}>
+      {/* 바탕·글자색·한글 글꼴은 globals.css의 앱 토큰(tt-, --font-sans)입니다. */}
+      <body className="bg-tt-ground font-sans text-tt-ink antialiased">
         {children}
       </body>
     </html>

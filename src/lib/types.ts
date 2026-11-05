@@ -77,3 +77,8 @@ export interface FavoriteRoute {
 export type ArrivalResult =
   | { status: "ok"; data: RouteArrival; receivedAt: number }
   | { status: "error"; last?: { data: RouteArrival; receivedAt: number } };
+
+/**
+ * 즐겨찾기 키(getFavoriteKey)별 조회 결과. 아직 한 번도 조회하지 않은 즐겨찾기는 키가 없습니다.
+ */
+export type ArrivalResults = Record<string, ArrivalResult>;

@@ -53,6 +53,32 @@
           { "routeId": "GGB233000464", "routeName": "1007(예약)", "routeType": "직행좌석" }
         ]
       }
+    ],
+    "sunstar": [
+      {
+        "alias": "한일타운",
+        "stopName": "경기일보.한일타운",
+        "priorityHours": [10, 12],
+        "nodeId": "GGB200000194",
+        "routes": [
+          { "routeId": "GGB200000024", "routeName": "310", "routeType": "일반" },
+          { "routeId": "GGB200000040", "routeName": "7-2", "routeType": "일반" },
+          { "routeId": "GGB233000007", "routeName": "777", "routeType": "일반" },
+          { "routeId": "GGB200000010", "routeName": "900", "routeType": "일반" }
+        ]
+      },
+      {
+        "alias": "수원역",
+        "stopName": "수원역7번출구.AK플라자",
+        "priorityHours": [15, 17],
+        "nodeId": "GGB202000106",
+        "routes": [
+          { "routeId": "GGB200000024", "routeName": "310", "routeType": "일반" },
+          { "routeId": "GGB200000040", "routeName": "7-2", "routeType": "일반" },
+          { "routeId": "GGB233000007", "routeName": "777", "routeType": "일반" },
+          { "routeId": "GGB200000010", "routeName": "900", "routeType": "일반" }
+        ]
+      }
     ]
   }
 }

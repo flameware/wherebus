@@ -1,6 +1,7 @@
 "use client";
 
 import { PullIndicator } from "@/components/pull-indicator";
+import { RefreshFab } from "@/components/refresh-fab";
 import { ROUTE_GRID } from "@/components/route-row";
 import { StopSection } from "@/components/stop-section";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
@@ -269,11 +270,15 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
             </>
           )}
 
-          <p className="py-4 text-center text-[11px] text-tt-faint">
+          {/* 맨 아래까지 내렸을 때 새로고침 버튼이 안내 문구와 마지막 노선 행을 가리지 않게 아래를 띄웁니다. */}
+          <p className="pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-center text-[11px] text-tt-faint">
             30초마다 새로 받아요 · 당겨서 새로고침
           </p>
         </main>
       </div>
+
+      {/* 위 transform 안에 두면 fixed 기준이 화면이 아니게 되므로 바깥에 둡니다. */}
+      {stops.length > 0 && <RefreshFab onRefresh={fetchAllBusData} />}
     </>
   );
 }

@@ -9,7 +9,7 @@ export const REFRESH_HOLD = 56;
 const MAX_PULL = 120;
 
 // 응답이 너무 빨라도 스피너가 깜빡이고 사라지지 않도록 최소한 이만큼은 보여줍니다.
-const MIN_SPIN_MS = 500;
+export const MIN_SPIN_MS = 500;
 
 /**
  * 페이지 맨 위에서 아래로 당겼다 놓으면 onRefresh를 호출합니다.

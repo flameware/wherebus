@@ -12,6 +12,7 @@
 
   /* 화면이 쓰는 글자 크기 단계의 행간·자간. 한글은 Tailwind 기본보다 행간을 넉넉히 둡니다. */
   --text-xs--line-height: 1.6;
+  --text-sm--line-height: 1.5;
   --text-xl--line-height: 1.4;
   --text-xl--letter-spacing: -0.01em;
   --text-2xl--line-height: 1.4;
@@ -21,7 +22,7 @@
   --color-tt-panel: #ffffff; /* 판 */
   --color-tt-ink: #121212; /* 글자, 제목 띠, 곧 도착 칸 */
   --color-tt-sub: #5c5c58; /* 보조 글자 */
-  --color-tt-faint: #8f8f8a; /* 흐린 글자 */
+  --color-tt-faint: #767671; /* 흐린 글자. 판 위에서 4.5:1 */
   --color-tt-rule: #dcdcd7; /* 가는 선 */
   --color-tt-warn: #a85a00; /* 경고 */
   --color-tt-fresh: #00a05a; /* 신선도 점(정상) */
@@ -43,4 +44,18 @@ html {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 움직임을 줄이도록 설정한 기기에서는 스피너가 돌지 않고 멈춘 채 보입니다.
+ * 애니메이션을 인라인 스타일로 걸기 때문에 !important로 이깁니다. */
+@media (prefers-reduced-motion: reduce) {
+  .pull-spinner {
+    animation: none !important;
+  }
+}
+
+/* 글자를 선택했을 때도 판의 검정·흰색을 씁니다. */
+::selection {
+  background-color: var(--color-tt-ink);
+  color: var(--color-tt-panel);
 }

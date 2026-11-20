@@ -3,7 +3,7 @@ import { BusArrival, RouteType } from "@/lib/types";
 // 이 분 이하로 남으면 "곧 도착"으로 강조합니다.
 export const IMMINENT_MINUTES = 2;
 
-// 이 분 이상 남은 차량은 흐리게 표시합니다.
+// 이 분 이상 남은 차량은 숫자 굵기를 낮춰 표시합니다.
 export const FAR_MINUTES = 15;
 
 // 마지막 갱신 후 이 시간이 지나면 데이터가 오래됐다고 표시합니다 (자동 갱신 주기의 2배).
@@ -64,7 +64,7 @@ export const minutesLeft = (
   );
 
 /**
- * 이번 차를 얼마나 강조할지. 곧 도착이면 검정 칸으로 강조하고, 15분 이상 남았으면 흐리게 둡니다.
+ * 이번 차를 얼마나 강조할지. 곧 도착이면 검정 칸으로 강조하고, 15분 이상 남았으면 굵기를 낮춥니다.
  */
 export type ArrivalEmphasis = "imminent" | "normal" | "far";
 

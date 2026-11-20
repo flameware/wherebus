@@ -116,7 +116,8 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
       .filter((data): data is RouteArrival => data !== null)
       .map(queriedAt);
     // 헤더의 "N초 전 갱신"은 받은 값 중 가장 오래된 조회 시각을 따릅니다.
-    setLastUpdated(okTimes.length > 0 ? Math.min(...okTimes) : respondedAt);
+    // 하나도 받지 못했으면 마지막으로 받은 시각을 그대로 둬서, 실패가 이어질 때 갱신 지연으로 넘어가게 합니다.
+    setLastUpdated((prev) => (okTimes.length > 0 ? Math.min(...okTimes) : prev));
     setIsRefreshing(false);
   }, [stops]);
 
@@ -165,6 +166,22 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
   // 화면이 보이기 시작한 뒤(정렬 시각이 정해진 뒤)부터 그립니다.
   const clockReady = orderedAt !== null;
 
+  // 신선도 표시. 갱신 지연이거나 하나도 받지 못했으면 경고 바탕으로 바꿉니다.
+  const freshnessWarn = isRefreshDelayed || allFailed;
+  const freshnessText = isRefreshing
+    ? "갱신 중"
+    : lastUpdated !== null
+      ? `${formatAgo(now - lastUpdated)} 갱신`
+      : allFailed
+        ? "갱신 실패"
+        : "불러오는 중";
+  // 스크린 리더에는 초마다 바뀌는 숫자 대신 상태가 바뀔 때만 알립니다.
+  const liveMessage = allFailed
+    ? "버스 정보를 불러오지 못했어요"
+    : isRefreshDelayed
+      ? "갱신이 지연되고 있어요"
+      : "";
+
   return (
     <>
       {/* iOS 26부터 홈 화면 웹앱은 화면 위쪽에 블러를 깔아 헤더가 흐려집니다. 배경색이 있는 sticky 띠가
@@ -180,36 +197,40 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
       >
         {/* 배경은 body가 바탕 토큰으로 칠합니다. */}
         <main className="mx-auto w-full max-w-md">
-          <header className="flex items-center justify-between gap-3 bg-tt-ink px-4 pt-3.5 pb-3 text-white">
-            <h1 className="text-[19px] leading-tight font-extrabold">버스어딨니</h1>
+          <p role="status" className="sr-only">
+            {liveMessage}
+          </p>
+          <header className="flex items-center justify-between gap-3 bg-tt-ink px-3 py-1 text-white">
+            <h1 className="text-xl leading-tight font-extrabold">버스어딨니</h1>
             <div className="flex items-center gap-3">
               {/* 터치가 없는 기기에서는 이 표시를 눌러 새로고침합니다.
-                  갱신 중에도 점이 보이도록 disabled 대신 aria-disabled만 겁니다.
-                  겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다. */}
+                  누르는 영역은 44px이고, 보이는 표시는 그 안의 작은 칸입니다.
+                  갱신 중에도 누를 수 있고, 겹친 클릭은 fetchAllBusData(singleFlight)가 막습니다. */}
               <button
                 type="button"
                 onClick={fetchAllBusData}
-                aria-disabled={isRefreshing}
-                className={cn(
-                  "flex min-h-6 items-center gap-1.5 px-2 py-1 text-xs",
-                  isRefreshDelayed ? "bg-tt-warn font-bold text-white" : "text-tt-rule",
-                )}
+                aria-label={`${freshnessText}, 새로고침`}
+                aria-busy={isRefreshing}
+                className="group flex min-h-11 items-center"
               >
                 <span
                   className={cn(
-                    "size-2 rounded-full",
-                    isRefreshing
-                      ? "animate-pulse bg-white"
-                      : isRefreshDelayed
-                        ? "bg-white"
-                        : "bg-tt-fresh",
+                    "flex items-center gap-1.5 px-2 py-1 text-xs group-active:opacity-70",
+                    freshnessWarn ? "bg-tt-warn font-bold text-white" : "text-tt-rule",
                   )}
-                />
-                {isRefreshing
-                  ? "갱신 중"
-                  : lastUpdated === null
-                    ? "불러오는 중"
-                    : `${formatAgo(now - lastUpdated)} 갱신`}
+                >
+                  <span
+                    className={cn(
+                      "size-2 rounded-full",
+                      isRefreshing
+                        ? "animate-pulse bg-white motion-reduce:animate-none"
+                        : freshnessWarn
+                          ? "bg-white"
+                          : "bg-tt-fresh",
+                    )}
+                  />
+                  {freshnessText}
+                </span>
               </button>
               <time
                 className="min-w-[3.25rem] text-right font-tt-num text-xl leading-none font-bold tabular-nums"
@@ -221,8 +242,8 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
           </header>
 
           {stops.length === 0 ? (
-            <div className="bg-tt-panel px-4 py-10 text-center">
-              <p className="text-[15px] font-bold">즐겨찾기 설정이 필요합니다</p>
+            <div className="bg-tt-panel px-3 py-10 text-center">
+              <p className="text-base font-bold">즐겨찾기 설정이 필요합니다</p>
               <p className="mt-1 text-xs text-tt-sub">
                 src/lib/favorites.json 파일을 확인하세요
               </p>
@@ -234,22 +255,22 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
                 aria-hidden
                 className={cn(
                   ROUTE_GRID,
-                  "sticky top-4 z-20 border-b border-tt-rule bg-tt-panel text-[11px] font-bold text-tt-sub",
+                  "sticky top-4 z-20 border-b border-tt-rule bg-tt-panel text-xs font-bold text-tt-sub",
                 )}
               >
-                <span className="px-3 py-1.5">노선</span>
-                <span className="border-l border-tt-rule px-3 py-1.5">이번 차</span>
-                <span className="border-l border-tt-rule px-3 py-1.5 text-right">다음 차</span>
+                <span className="px-3 py-1">노선</span>
+                <span className="border-l border-tt-rule px-3 py-1">이번 차</span>
+                <span className="border-l border-tt-rule px-3 py-1 text-right">다음 차</span>
               </div>
 
               {allFailed && (
-                <div className="flex items-center justify-between gap-3 border-b border-tt-rule bg-tt-panel px-4 py-2.5 text-[13px] font-bold text-tt-warn">
-                  <span>버스 정보를 불러오지 못했어요</span>
+                <div className="flex items-center justify-between gap-3 border-b border-tt-rule bg-tt-panel pl-3 text-sm font-bold text-tt-warn">
+                  <span className="py-2.5">버스 정보를 불러오지 못했어요</span>
                   <button
                     type="button"
                     onClick={fetchAllBusData}
-                    aria-disabled={isRefreshing}
-                    className="min-h-6 shrink-0 px-1 underline underline-offset-2"
+                    aria-busy={isRefreshing}
+                    className="min-h-11 shrink-0 px-3 underline underline-offset-2 active:opacity-70"
                   >
                     다시 시도
                   </button>
@@ -271,7 +292,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
           )}
 
           {/* 맨 아래까지 내렸을 때 새로고침 버튼이 안내 문구와 마지막 노선 행을 가리지 않게 아래를 띄웁니다. */}
-          <p className="pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-center text-[11px] text-tt-faint">
+          <p className="pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-center text-xs text-tt-sub">
             30초마다 새로 받아요 · 당겨서 새로고침
           </p>
         </main>

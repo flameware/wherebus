@@ -38,6 +38,7 @@ export function PullIndicator({ pull, refreshing }: PullIndicatorProps) {
         }}
       >
         <g
+          className="pull-spinner"
           style={
             refreshing
               ? {

@@ -21,9 +21,9 @@ export function StopSection({ stop, results, now, clockReady }: StopSectionProps
 
   return (
     <section className="bg-tt-panel">
-      <header className="flex items-center gap-3 border-b border-tt-rule pt-3.5 pr-3 pb-2.5 pl-4">
+      <header className="flex items-center gap-3 border-b border-tt-rule px-3 pt-3.5 pb-2.5">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
-          <h2 className="shrink-0 text-xl leading-tight font-extrabold">{stop.alias}</h2>
+          <h2 className="max-w-[70%] shrink-0 truncate text-xl leading-tight font-extrabold">{stop.alias}</h2>
           {stop.stopName !== stop.alias && (
             <span className="truncate text-xs text-tt-sub">{stop.stopName}</span>
           )}
@@ -31,7 +31,7 @@ export function StopSection({ stop, results, now, clockReady }: StopSectionProps
         {stop.priorityHours && (
           <span
             className={cn(
-              "shrink-0 px-1.5 py-0.5 font-tt-num text-[15px] font-semibold tabular-nums",
+              "shrink-0 px-1.5 py-0.5 font-tt-num text-sm font-semibold tabular-nums",
               isPriorityNow ? "bg-tt-ink text-white" : "text-tt-faint",
             )}
           >

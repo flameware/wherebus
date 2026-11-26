@@ -292,7 +292,7 @@ export function ArrivalBoard({ stops }: { stops: FavoriteStop[] }) {
           )}
 
           {/* 맨 아래까지 내렸을 때 새로고침 버튼이 안내 문구와 마지막 노선 행을 가리지 않게 아래를 띄웁니다. */}
-          <p className="pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] text-center text-xs text-tt-sub">
+          <p className="pt-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] text-center text-xs text-tt-sub">
             30초마다 새로 받아요 · 당겨서 새로고침
           </p>
         </main>

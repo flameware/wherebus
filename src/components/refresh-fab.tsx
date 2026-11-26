@@ -27,7 +27,8 @@ export function RefreshFab({ onRefresh }: { onRefresh: () => Promise<void> }) {
     // 틀은 터치를 통과시키고 버튼만 받습니다.
     // iOS 홈 화면 앱은 화면 맨 아래까지 그리는데 viewport-fit=cover가 아니라 safe-area-inset-bottom이 0입니다.
     // 각진 버튼은 꼭짓점이 화면의 둥근 모서리에 잘리므로, 이 버튼만 원형으로 둡니다.
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-md justify-end px-4">
+    // 가장자리 간격 28px은 iOS 26 기본 앱(사진·Safari)의 아래쪽 둥근 버튼이 화면 가장자리에서 떨어진 거리에 맞춘 값입니다.
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1.75rem+env(safe-area-inset-bottom))] z-40 mx-auto flex w-full max-w-md justify-end px-7">
       <button
         type="button"
         onClick={handleClick}
